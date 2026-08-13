@@ -30,7 +30,7 @@ func loadDistribution(files fs.FS) (*assetCatalog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read web index: %w", err)
 	}
-	if string(index) == compilationStub {
+	if isCompilationStub(index) {
 		return &assetCatalog{immutable: make(map[string]struct{}), stub: true}, nil
 	}
 	return validateReleaseDistribution(files)
@@ -41,7 +41,7 @@ func validateReleaseDistribution(files fs.FS) (*assetCatalog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read web index: %w", err)
 	}
-	if string(index) == compilationStub {
+	if isCompilationStub(index) {
 		return nil, fmt.Errorf("embedded web distribution is the compilation stub")
 	}
 	if !strings.Contains(string(index), productionDistributionMarker) {
@@ -79,6 +79,10 @@ func validateReleaseDistribution(files fs.FS) (*assetCatalog, error) {
 		}
 	}
 	return catalog, nil
+}
+
+func isCompilationStub(index []byte) bool {
+	return strings.ReplaceAll(string(index), "\r\n", "\n") == compilationStub
 }
 
 func isRegularFile(files fs.FS, assetPath string) (bool, error) {

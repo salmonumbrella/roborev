@@ -3,6 +3,7 @@ package web
 import (
 	"io/fs"
 	"os"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -20,18 +21,28 @@ func completeDistribution() fstest.MapFS {
 }
 
 func TestValidateReleaseDistributionRejectsCompilationStub(t *testing.T) {
-	_, err := validateReleaseDistribution(fstest.MapFS{
-		"index.html": {Data: []byte(compilationStub)},
-	})
-	require.ErrorContains(t, err, "compilation stub")
+	for _, index := range []string{
+		compilationStub,
+		strings.ReplaceAll(compilationStub, "\n", "\r\n"),
+	} {
+		_, err := validateReleaseDistribution(fstest.MapFS{
+			"index.html": {Data: []byte(index)},
+		})
+		require.ErrorContains(t, err, "compilation stub")
+	}
 }
 
-func TestLoadDistributionAcceptsCanonicalCompilationStub(t *testing.T) {
-	catalog, err := loadDistribution(fstest.MapFS{
-		"index.html": {Data: []byte(compilationStub)},
-	})
-	require.NoError(t, err)
-	assert.True(t, catalog.stub)
+func TestLoadDistributionAcceptsCompilationStubAcrossLineEndings(t *testing.T) {
+	for _, index := range []string{
+		compilationStub,
+		strings.ReplaceAll(compilationStub, "\n", "\r\n"),
+	} {
+		catalog, err := loadDistribution(fstest.MapFS{
+			"index.html": {Data: []byte(index)},
+		})
+		require.NoError(t, err)
+		assert.True(t, catalog.stub)
+	}
 }
 
 func TestLoadDistributionRejectsUnknownIncompleteDistribution(t *testing.T) {
