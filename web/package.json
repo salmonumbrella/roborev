@@ -15,6 +15,9 @@
     "check": "bun run generate:check && bun run typecheck && bun run check:svelte && bun run lint && bun run format:check",
     "test": "vitest run",
     "build": "vite build",
+    "assets:check": "bun run scripts/validate-assets.ts dist",
+    "assets:embed": "bun run scripts/embed-assets.ts dist",
+    "assets:restore": "bun run scripts/embed-assets.ts --restore-stub",
     "dev": "vite"
   },
   "dependencies": {
