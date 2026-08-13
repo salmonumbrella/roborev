@@ -17,6 +17,7 @@ export async function runBrowserTests(): Promise<number> {
   const repoRoot = dirname(webRoot);
   const scratch = await mkdtemp(join(tmpdir(), "roborev-web-e2e-"));
   const dataDir = join(scratch, "data");
+  const homeDir = join(scratch, "home");
   const database = join(scratch, "reviews.db");
   const config = join(scratch, "config.toml");
   const binary = join(
@@ -35,7 +36,10 @@ export async function runBrowserTests(): Promise<number> {
       throw new Error("embedded web assets must start at the compilation stub");
     }
 
-    await mkdir(dataDir, { recursive: true, mode: 0o700 });
+    await Promise.all([
+      mkdir(dataDir, { recursive: true, mode: 0o700 }),
+      mkdir(homeDir, { recursive: true, mode: 0o700 }),
+    ]);
     await writeFile(
       config,
       `max_workers = 0\n\n[web]\nenabled = true\nlisten = "127.0.0.1:0"\nauth_token = "${browserToken}"\n`,
@@ -68,7 +72,7 @@ export async function runBrowserTests(): Promise<number> {
       ],
       {
         cwd: repoRoot,
-        env: { ...process.env, ROBOREV_DATA_DIR: dataDir },
+        env: isolatedDaemonEnvironment(process.env, dataDir, homeDir),
         stdio: "inherit",
       },
     );
@@ -89,6 +93,26 @@ export async function runBrowserTests(): Promise<number> {
     }
     await rm(scratch, { recursive: true, force: true });
   }
+}
+
+export function isolatedDaemonEnvironment(
+  source: NodeJS.ProcessEnv,
+  dataDir: string,
+  homeDir: string,
+): NodeJS.ProcessEnv {
+  const environment: NodeJS.ProcessEnv = {
+    ...source,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    XDG_CACHE_HOME: join(homeDir, ".cache"),
+    XDG_CONFIG_HOME: join(homeDir, ".config"),
+    ROBOREV_DATA_DIR: dataDir,
+    ROBOREV_TELEMETRY_ENABLED: "false",
+  };
+  delete environment.ROBOREV_WEB_DEV_BACKEND;
+  delete environment.ROBOREV_E2E_ORIGIN;
+  delete environment.ROBOREV_E2E_TOKEN;
+  return environment;
 }
 
 async function run(
