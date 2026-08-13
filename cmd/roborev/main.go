@@ -85,6 +85,7 @@ func main() {
 	rootCmd.AddCommand(backfillTokensCmd())
 	rootCmd.AddCommand(updateCmd())
 	rootCmd.AddCommand(versionCmd())
+	rootCmd.AddCommand(verifyWebAssetsCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		// exitError carries a specific exit code; the RunE that returned
