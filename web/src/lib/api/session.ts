@@ -38,27 +38,13 @@ export function authenticatedFetch(
   fetchImpl: Fetch = globalThis.fetch.bind(globalThis),
 ): Fetch {
   return async (input, init) => {
-    const request = new Request(
-      new URL(
-        input instanceof Request ? input.url : input,
-        globalThis.location.origin,
-      ),
-      {
-        ...(input instanceof Request
-          ? {
-              method: input.method,
-              headers: input.headers,
-              body:
-                input.method === "GET" || input.method === "HEAD"
-                  ? undefined
-                  : input.body,
-              signal: input.signal,
-            }
-          : {}),
-        ...init,
-        credentials: "same-origin",
-      },
-    );
+    const request =
+      input instanceof Request
+        ? new Request(input, { ...init, credentials: "same-origin" })
+        : new Request(new URL(input, globalThis.location.origin), {
+            ...init,
+            credentials: "same-origin",
+          });
     const headers = new Headers(request.headers);
     const session = sessionStorage.getItem(sessionKey);
     if (session !== null) {

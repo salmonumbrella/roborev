@@ -11,7 +11,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...svelte.configs["flat/recommended"],
   {
-    files: ["src/**/*.svelte"],
+    files: ["src/**/*.svelte", "src/**/*.svelte.js", "src/**/*.svelte.ts"],
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
@@ -22,6 +22,12 @@ export default tseslint.config(
     files: ["src/**/*.{ts,svelte}"],
     languageOptions: {
       globals: globals.browser,
+    },
+  },
+  {
+    files: ["src/**/*.svelte.js", "src/**/*.svelte.ts"],
+    rules: {
+      "svelte/prefer-svelte-reactivity": "off",
     },
   },
   {

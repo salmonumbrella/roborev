@@ -205,14 +205,14 @@ Commit: `feat(web): add the native review runtime`
     context.
 - Produces: owner-scoped latest-command and ordered-mutation coordination.
 
-- [ ] **Step 1: Move the store tests before implementations**
+- [x] **Step 1: Move the store tests before implementations**
 
 Copy the daemon, job, cancellation, mutation, workflow, and log tests. Change
 only imports, native test layers, canonical generated types, and direct URL
 expectations. Preserve assertions for filtering, sorting, panels, stale
 responses, cancellation, reconciliation, reconnect, and ownership.
 
-- [ ] **Step 2: Verify representative tests fail**
+- [x] **Step 2: Verify representative tests fail**
 
 Run:
 
@@ -224,7 +224,7 @@ bun x vitest run web/src/lib/stores/roborev/log.svelte.test.ts
 
 Expected: FAIL because the implementations are absent.
 
-- [ ] **Step 3: Move stores and utilities**
+- [x] **Step 3: Move stores and utilities**
 
 Move store bodies without changing transitions. Adapt type imports to the
 canonical generated module, route selection to injected
@@ -232,7 +232,7 @@ canonical generated module, route selection to injected
 the 30-second available poll and 1-second recovery poll. Compose all stores with
 one client, runtime, and workflow owner.
 
-- [ ] **Step 4: Run the moved suite**
+- [x] **Step 4: Run the moved suite**
 
 Run:
 `bun x vitest run web/src/lib/stores web/src/lib/utils/roborev-*.test.ts`
