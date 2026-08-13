@@ -48,10 +48,12 @@ export interface DevDependencies {
 export async function runWebDev(
   dependencies: DevDependencies = defaultDependencies(),
 ): Promise<number> {
-  const root = await dependencies.makeTempRoot();
+  let root = "";
   const children: ChildProcessHandle[] = [];
   let terminatingSignal: NodeJS.Signals = "SIGTERM";
+  let terminationRequested = false;
   const unregisterSignals = dependencies.registerSignals((signal) => {
+    terminationRequested = true;
     terminatingSignal = signal;
     for (const child of children) {
       child.kill(signal);
@@ -59,8 +61,12 @@ export async function runWebDev(
   });
 
   try {
+    root = await dependencies.makeTempRoot();
+    if (terminationRequested) return 0;
     await dependencies.prepareRoot(root);
+    if (terminationRequested) return 0;
     const vitePort = await dependencies.allocatePort();
+    if (terminationRequested) return 0;
     const viteOrigin = `http://127.0.0.1:${vitePort}`;
     const dataDir = join(root, "data");
     const webDir = resolve(dependencies.cwd);
@@ -90,6 +96,7 @@ export async function runWebDev(
       env: daemonEnvironment,
     });
     children.push(daemon);
+    if (terminationRequested) return 0;
 
     const browserRuntime = await Promise.race([
       dependencies.waitForRuntime(dataDir, viteOrigin),
@@ -99,6 +106,7 @@ export async function runWebDev(
         );
       }),
     ]);
+    if (terminationRequested) return 0;
     const vite = dependencies.spawn({
       command: "bun",
       args: ["run", "dev", "--", "--port", String(vitePort)],
@@ -110,6 +118,7 @@ export async function runWebDev(
       },
     });
     children.push(vite);
+    if (terminationRequested) return 0;
     process.stdout.write(`Roborev web development server: ${viteOrigin}\n`);
 
     const code = await Promise.race(children.map((child) => child.exited));
@@ -119,7 +128,9 @@ export async function runWebDev(
     await Promise.all(
       children.map((child) => stopChild(child, terminatingSignal)),
     );
-    await dependencies.removeTempRoot(root);
+    if (root !== "") {
+      await dependencies.removeTempRoot(root);
+    }
   }
 }
 

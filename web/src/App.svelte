@@ -37,7 +37,7 @@
   async function disconnect(): Promise<void> {
     try {
       await logout();
-      view = "login";
+      await checkSession();
     } catch (error) {
       errorMessage =
         error instanceof Error ? error.message : "Could not end the session";

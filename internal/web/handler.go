@@ -102,7 +102,15 @@ func acceptsHTML(r *http.Request) bool {
 }
 
 func isNavigationPath(requestPath string) bool {
-	return requestPath == "/reviews" || strings.HasPrefix(requestPath, "/reviews/") || requestPath == "/analytics"
+	if requestPath != "/reviews" && !strings.HasPrefix(requestPath, "/reviews/") && requestPath != "/analytics" {
+		return false
+	}
+	for segment := range strings.SplitSeq(strings.TrimPrefix(requestPath, "/"), "/") {
+		if strings.Contains(segment, ".") {
+			return false
+		}
+	}
+	return true
 }
 
 func fixedContentType(assetPath string) (string, bool) {

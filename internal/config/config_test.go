@@ -5009,8 +5009,10 @@ func TestWebConfigNormalization(t *testing.T) {
 		{name: "reject origin path", contents: "[web]\npublic_origin = \"https://reviews.example.com/path\"\n", wantErr: "origin"},
 		{name: "reject origin userinfo", contents: "[web]\npublic_origin = \"https://user@reviews.example.com\"\n", wantErr: "origin"},
 		{name: "reject remote HTTP", contents: "[web]\npublic_origin = \"http://reviews.example.com\"\n", wantErr: "HTTPS"},
+		{name: "reject unauthenticated proxy origin", contents: "[web]\nlisten = \"127.0.0.1:7374\"\npublic_origin = \"https://reviews.example.com\"\n", wantErr: "auth token"},
 		{name: "reject unauthenticated remote bind", contents: "[web]\nlisten = \"0.0.0.0:7374\"\npublic_origin = \"https://reviews.example.com\"\n", wantErr: "auth token"},
 		{name: "accept authenticated remote bind", contents: "[web]\nlisten = \"0.0.0.0:7374\"\npublic_origin = \"https://reviews.example.com\"\nauth_token = \"secret\"\n", wantOrigin: "https://reviews.example.com"},
+		{name: "reject empty origin hostname", contents: "[web]\npublic_origin = \"https://:443\"\nauth_token = \"secret\"\n", wantErr: "origin"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

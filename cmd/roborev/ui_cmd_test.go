@@ -85,6 +85,43 @@ func TestUICmdOpenerErrorIncludesManualURL(t *testing.T) {
 	assert.Contains(t, err.Error(), "https://reviews.example.com/reviews/7")
 }
 
+func TestUICmdMatchesExplicitServerToItsRuntime(t *testing.T) {
+	originalServerAddr := serverAddr
+	originalParsed := parsedServerEndpoint
+	originalList := uiListAllRuntimes
+	originalDiscover := uiGetAnyRunningDaemon
+	serverAddr = "127.0.0.1:7474"
+	parsedServerEndpoint = nil
+	uiListAllRuntimes = func() ([]*daemon.RuntimeInfo, error) {
+		return []*daemon.RuntimeInfo{
+			{Address: "127.0.0.1:7373", WebOrigin: "https://other.example.com"},
+			{Address: "127.0.0.1:7474", WebOrigin: "https://selected.example.com"},
+		}, nil
+	}
+	uiGetAnyRunningDaemon = func() (*daemon.RuntimeInfo, error) {
+		return nil, errors.New("must not use arbitrary discovery with --server")
+	}
+	t.Cleanup(func() {
+		serverAddr = originalServerAddr
+		parsedServerEndpoint = originalParsed
+		uiListAllRuntimes = originalList
+		uiGetAnyRunningDaemon = originalDiscover
+	})
+
+	var opened string
+	originalEnsure := uiEnsureDaemon
+	originalOpen := openBrowserURL
+	uiEnsureDaemon = func() error { return nil }
+	openBrowserURL = func(target string) error { opened = target; return nil }
+	t.Cleanup(func() {
+		uiEnsureDaemon = originalEnsure
+		openBrowserURL = originalOpen
+	})
+
+	require.NoError(t, uiCmd().Execute())
+	assert.Equal(t, "https://selected.example.com/reviews", opened)
+}
+
 func TestUICmdRejectsInvalidPublishedOrigin(t *testing.T) {
 	for _, origin := range []string{
 		"file:///tmp/reviews",
@@ -114,6 +151,10 @@ func withUICommandDependencies(
 	originalEnsure := uiEnsureDaemon
 	originalDiscover := uiGetAnyRunningDaemon
 	originalOpen := openBrowserURL
+	originalServerAddr := serverAddr
+	originalParsed := parsedServerEndpoint
+	serverAddr = ""
+	parsedServerEndpoint = nil
 	uiEnsureDaemon = ensure
 	uiGetAnyRunningDaemon = discover
 	openBrowserURL = open
@@ -121,5 +162,7 @@ func withUICommandDependencies(
 		uiEnsureDaemon = originalEnsure
 		uiGetAnyRunningDaemon = originalDiscover
 		openBrowserURL = originalOpen
+		serverAddr = originalServerAddr
+		parsedServerEndpoint = originalParsed
 	})
 }

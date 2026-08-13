@@ -35,34 +35,37 @@ import (
 
 // Server is the HTTP API server for the daemon
 type Server struct {
-	db                *storage.DB
-	configWatcher     *ConfigWatcher
-	broadcaster       Broadcaster
-	workerPool        *WorkerPool
-	httpServer        *http.Server
-	browserServer     *http.Server
-	browserListener   net.Listener
-	browserRuntime    *BrowserRuntimeInfo
-	webDevOrigin      string
-	syncWorker        *storage.SyncWorker
-	ciPoller          *CIPoller
-	hookRunner        *HookRunner
-	errorLog          *ErrorLog
-	activityLog       *ActivityLog
-	telemetry         telemetry.Client
-	telemetryOnce     sync.Once
-	telemetryStop     chan struct{}
-	startTime         time.Time
-	endpointMu        sync.Mutex // protects endpoint (written by Start, read by Stop)
-	endpoint          DaemonEndpoint
-	alternateEndpoint *DaemonEndpoint
-	socketActivated   bool // true if started via systemd socket activation
-	stopOnce          sync.Once
-	stopErr           error
-	sweepMu           sync.Mutex         // protects sweepCancel (written by Start, read by Stop)
-	sweepCancel       context.CancelFunc // cancels the panel sweep goroutine on Stop
-	shutdownCh        chan struct{}      // closed when /api/shutdown is requested
-	shutdownOnce      sync.Once
+	db                      *storage.DB
+	configWatcher           *ConfigWatcher
+	broadcaster             Broadcaster
+	workerPool              *WorkerPool
+	httpServer              *http.Server
+	browserMu               sync.Mutex
+	browserServer           *http.Server
+	browserListener         net.Listener
+	browserRuntime          *BrowserRuntimeInfo
+	browserStopping         bool
+	allowWebCompilationStub bool
+	webDevOrigin            string
+	syncWorker              *storage.SyncWorker
+	ciPoller                *CIPoller
+	hookRunner              *HookRunner
+	errorLog                *ErrorLog
+	activityLog             *ActivityLog
+	telemetry               telemetry.Client
+	telemetryOnce           sync.Once
+	telemetryStop           chan struct{}
+	startTime               time.Time
+	endpointMu              sync.Mutex // protects endpoint (written by Start, read by Stop)
+	endpoint                DaemonEndpoint
+	alternateEndpoint       *DaemonEndpoint
+	socketActivated         bool // true if started via systemd socket activation
+	stopOnce                sync.Once
+	stopErr                 error
+	sweepMu                 sync.Mutex         // protects sweepCancel (written by Start, read by Stop)
+	sweepCancel             context.CancelFunc // cancels the panel sweep goroutine on Stop
+	shutdownCh              chan struct{}      // closed when /api/shutdown is requested
+	shutdownOnce            sync.Once
 
 	// Cached machine ID to avoid INSERT on every status request
 	machineIDMu sync.Mutex
@@ -84,6 +87,12 @@ type ServerOption func(*Server)
 func WithWebDevelopmentOrigin(origin string) ServerOption {
 	return func(server *Server) {
 		server.webDevOrigin = origin
+	}
+}
+
+func withWebCompilationStub() ServerOption {
+	return func(server *Server) {
+		server.allowWebCompilationStub = true
 	}
 }
 
@@ -340,16 +349,22 @@ func (s *Server) Start(ctx context.Context) error {
 		s.workerPool.Stop()
 		return err
 	}
-	s.endpointMu.Lock()
+	s.browserMu.Lock()
+	if s.browserStopping {
+		s.browserMu.Unlock()
+		_ = s.httpServer.Close()
+		s.configWatcher.Stop()
+		s.workerPool.Stop()
+		return fmt.Errorf("server stopped during browser startup")
+	}
 	s.browserRuntime = browserRuntime
-	s.endpointMu.Unlock()
-
 	s.startPanelSweep(ctx)
 
 	// Write runtime info only after the HTTP server is accepting requests.
 	if err := WriteRuntime(ep, alternate, version.Version, browserRuntime); err != nil {
 		log.Printf("Warning: failed to write runtime info: %v", err)
 	}
+	s.browserMu.Unlock()
 
 	s.captureDaemonStartedTelemetry(cfg)
 	s.startDailyTelemetryLoop(ctx, cfg)
@@ -563,13 +578,17 @@ func (s *Server) stopOnce0() error {
 	s.configWatcher.Stop()
 
 	// Stop HTTP server
-	s.endpointMu.Lock()
+	s.browserMu.Lock()
+	s.browserStopping = true
 	browserServer := s.browserServer
-	s.endpointMu.Unlock()
+	browserListener := s.browserListener
+	s.browserMu.Unlock()
 	if browserServer != nil {
 		if err := browserServer.Shutdown(ctx); err != nil {
 			log.Printf("Browser HTTP server shutdown error: %v", err)
 		}
+	} else if browserListener != nil {
+		_ = browserListener.Close()
 	}
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		log.Printf("HTTP server shutdown error: %v", err)

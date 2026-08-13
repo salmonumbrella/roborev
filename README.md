@@ -163,6 +163,10 @@ powershell -ExecutionPolicy ByPass -c "irm https://roborev.io/install.ps1 | iex"
 go install go.kenn.io/roborev/cmd/roborev@latest
 ```
 
+The Go module source archive does not include generated browser assets. This
+installation path provides the CLI and terminal UI; install a release package
+or build with `make install` for the embedded browser application.
+
 ## Developer Setup
 
 This repo uses [`prek`](https://prek.j178.dev/) for local pre-commit checks.

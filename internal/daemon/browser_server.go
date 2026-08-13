@@ -15,6 +15,13 @@ import (
 var browserCapabilities = []string{"web-ui-v1", "web-session-v1"}
 
 func (s *Server) startBrowserServer(web config.WebConfig) (*BrowserRuntimeInfo, error) {
+	if !web.Enabled {
+		return nil, nil
+	}
+	if s.webDevOrigin == "" && !s.allowWebCompilationStub && !webassets.EmbeddedReleaseAvailable() {
+		log.Printf("Browser application disabled: this source build does not contain production web assets")
+		return nil, nil
+	}
 	endpoint, err := ResolveBrowserEndpoint(web)
 	if err != nil {
 		return nil, err
@@ -53,10 +60,15 @@ func (s *Server) startBrowserServer(web config.WebConfig) (*BrowserRuntimeInfo, 
 		return fail(err)
 	}
 	server := &http.Server{Addr: endpoint.Address, Handler: handler}
-	s.endpointMu.Lock()
+	s.browserMu.Lock()
+	if s.browserStopping {
+		s.browserMu.Unlock()
+		_ = server.Close()
+		return nil, fmt.Errorf("server stopped during browser startup")
+	}
 	s.browserServer = server
 	s.browserListener = endpoint.Listener
-	s.endpointMu.Unlock()
+	s.browserMu.Unlock()
 	serveErrCh := make(chan error, 1)
 	go func() {
 		serveErrCh <- server.Serve(endpoint.Listener)

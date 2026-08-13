@@ -107,6 +107,45 @@ describe("full-stack web development", () => {
     expect(vite.signals).toContain("SIGTERM");
     expect(removed).toBe(root);
   });
+
+  test("does not spawn children when termination arrives during preparation", async () => {
+    const spawns: SpawnRequest[] = [];
+    let signalHandler: ((signal: NodeJS.Signals) => void) | undefined;
+    let removed = false;
+    const dependencies: DevDependencies = {
+      cwd: "/work/roborev/web",
+      env: {},
+      async makeTempRoot() {
+        return "/tmp/roborev-web-canceled";
+      },
+      async prepareRoot() {
+        signalHandler?.("SIGTERM");
+      },
+      async allocatePort() {
+        return 43123;
+      },
+      spawn(request) {
+        spawns.push(request);
+        return new FakeChild();
+      },
+      async waitForRuntime() {
+        throw new Error("must not wait for runtime after cancellation");
+      },
+      registerSignals(handler) {
+        signalHandler = handler;
+        return () => {
+          signalHandler = undefined;
+        };
+      },
+      async removeTempRoot() {
+        removed = true;
+      },
+    };
+
+    await expect(runWebDev(dependencies)).resolves.toBe(0);
+    expect(spawns).toEqual([]);
+    expect(removed).toBe(true);
+  });
 });
 
 async function viWaitFor(predicate: () => boolean): Promise<void> {

@@ -722,6 +722,13 @@ func normalizeWebConfig(web *WebConfig) error {
 			return err
 		}
 		web.PublicOrigin = origin
+		parsedOrigin, err := url.Parse(origin)
+		if err != nil {
+			return fmt.Errorf("web public origin: %w", err)
+		}
+		if !isLoopbackHost(parsedOrigin.Hostname()) && web.AuthToken == "" {
+			return fmt.Errorf("web auth token is required for a non-loopback public origin")
+		}
 	}
 	if !loopback {
 		if web.AuthToken == "" {
@@ -744,6 +751,9 @@ func normalizeWebOrigin(raw string) (string, error) {
 		return "", fmt.Errorf("web public origin must use HTTP or HTTPS")
 	}
 	hostname := strings.ToLower(origin.Hostname())
+	if hostname == "" {
+		return "", fmt.Errorf("web public origin must include a hostname")
+	}
 	if scheme == "http" && !isLoopbackHost(hostname) {
 		return "", fmt.Errorf("web public origin must use HTTPS unless it is loopback")
 	}

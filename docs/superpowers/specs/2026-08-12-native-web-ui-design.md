@@ -271,10 +271,11 @@ store it in browser persistence. The application discards it after exchange.
 
 `POST /api/ui/session/login` requires the exact `Host` and `Origin`. It creates
 an in-memory ambient session and sets a host-only, `HttpOnly`, `SameSite=Strict`
-cookie. The cookie has `Secure` when the configured public origin uses HTTPS; an
-HTTP loopback-only origin omits it. The response returns a tab token plus a CSRF
-token. The cookie name includes a random daemon instance identifier because
-cookies do not distinguish localhost ports.
+cookie with `Path=/`. Logout expires the cookie with the same path and security
+attributes. The cookie has `Secure` when the configured public origin uses
+HTTPS; an HTTP loopback-only origin omits it. The response returns a tab token
+plus a CSRF token. The cookie name includes a random daemon instance identifier
+because cookies do not distinguish localhost ports.
 
 Sessions intentionally live only in daemon memory. A daemon restart changes the
 instance identifier and invalidates all cookies and tab tokens. Remote users
@@ -301,8 +302,10 @@ invalidate other tabs.
 
 The application stores the tab and CSRF tokens only in `sessionStorage`. They
 therefore disappear when the tab closes. A remote user without a valid ambient
-cookie sees the login screen. The safe local-session path may establish a local
-ambient session before bootstrap only when every local trust condition is met.
+cookie sees the login screen. When no remote token is configured,
+`POST /api/ui/session/bootstrap` itself creates the ambient local session and
+returns its first tab credentials, but only after every local trust condition
+and Fetch Metadata check succeeds.
 
 ### Authenticated requests, CSRF, and streams
 
@@ -474,6 +477,10 @@ It accepts:
 - repeated stored source values;
 - optional agent and model filters; and
 - a requested or server-selected UTC time bucket.
+
+Agent and model filters apply only to agent-attempt metrics. They do not remove
+or duplicate logical reviews or alter review volume, failure rate, review
+latency, or verdict mix. Project and source filters apply to both populations.
 
 The default range is 30 days. The UI offers 24-hour, 7-day, 30-day, 90-day,
 year, and all-time presets. Inputs convert at the boundary to the UTC timestamp

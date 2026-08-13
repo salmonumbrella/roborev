@@ -33,3 +33,9 @@ func ValidateEmbeddedRelease() error {
 	_, err = validateReleaseDistribution(files)
 	return err
 }
+
+// EmbeddedReleaseAvailable reports whether this binary contains a validated
+// production distribution rather than the source-build compilation stub.
+func EmbeddedReleaseAvailable() bool {
+	return ValidateEmbeddedRelease() == nil
+}

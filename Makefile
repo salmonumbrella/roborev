@@ -64,11 +64,11 @@ release-snapshot-check:
 		cd .. && git diff --exit-code -- internal/web/dist
 
 install:
-	@# Install to ~/.local/bin for development (creates directory if needed)
-	@if [ -z "$(HOME)" ]; then echo "error: HOME is not set" >&2; exit 1; fi
-	@mkdir -p "$(HOME)/.local/bin"
-	go build -ldflags="$(LDFLAGS)" -o "$(HOME)/.local/bin/roborev" ./cmd/roborev
-	@echo "Installed to ~/.local/bin/roborev"
+	@set -e; $(MAKE) web-embed; trap '$(MAKE) web-restore' EXIT; \
+		if [ -z "$(HOME)" ]; then echo "error: HOME is not set" >&2; exit 1; fi; \
+		mkdir -p "$(HOME)/.local/bin"; \
+		go build -ldflags="$(LDFLAGS)" -o "$(HOME)/.local/bin/roborev" ./cmd/roborev; \
+		echo "Installed to ~/.local/bin/roborev"
 
 clean:
 	rm -rf bin/
@@ -112,7 +112,16 @@ api-generate:
 	go generate ./pkg/client/generated
 
 api-check:
-	go test ./internal/daemon -run 'TestHumaOpenAPISpec$$'
+	@set -e; tmp="$$(mktemp -d)"; trap 'chmod -R u+w "$$tmp"; rm -rf "$$tmp"' EXIT; \
+		mkdir -p "$$tmp/pkg/client/generated"; \
+		cp pkg/client/generated/config.yaml "$$tmp/pkg/client/generated/config.yaml"; \
+		go run ./internal/daemon_client/openapi_generate -format yaml -o "$$tmp/pkg/client/openapi.yaml"; \
+		(cd "$$tmp/pkg/client/generated" && \
+			go run github.com/doordash-oss/oapi-codegen-dd/v3/cmd/oapi-codegen@v3.75.5 \
+				-config config.yaml ../openapi.yaml); \
+		diff -u pkg/client/openapi.yaml "$$tmp/pkg/client/openapi.yaml"; \
+		diff -ru --exclude=config.yaml --exclude=generate.go \
+			pkg/client/generated "$$tmp/pkg/client/generated"
 	cd web && bun run generate:check
 
 # Unit tests only (excludes integration and postgres tests)

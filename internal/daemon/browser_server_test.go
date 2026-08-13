@@ -18,6 +18,7 @@ import (
 
 func TestBrowserServerStartsReadyAndKeepsShutdownPrivate(t *testing.T) {
 	server, _, _ := newTestServer(t)
+	server.allowWebCompilationStub = true
 	cfg := config.DefaultConfig()
 	cfg.Web.Listen = "127.0.0.1:0"
 	runtime, err := server.startBrowserServer(cfg.Web)
@@ -40,6 +41,23 @@ func TestBrowserServerStartsReadyAndKeepsShutdownPrivate(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, shutdownResponse.StatusCode)
 }
 
+func TestBrowserServerSkipsCompilationStubOutsideDevelopment(t *testing.T) {
+	server, _, _ := newTestServer(t)
+	server.allowWebCompilationStub = false
+	runtime, err := server.startBrowserServer(config.DefaultConfig().Web)
+	require.NoError(t, err)
+	assert.Nil(t, runtime)
+}
+
+func TestBrowserServerCannotStartAfterStop(t *testing.T) {
+	server, _, _ := newTestServer(t)
+	server.allowWebCompilationStub = true
+	require.NoError(t, server.Stop())
+	runtime, err := server.startBrowserServer(config.DefaultConfig().Web)
+	require.Error(t, err)
+	assert.Nil(t, runtime)
+}
+
 func TestBrowserServerDisabled(t *testing.T) {
 	server, _, _ := newTestServer(t)
 	runtime, err := server.startBrowserServer(config.WebConfig{Enabled: false})
@@ -58,7 +76,7 @@ func TestServerBrowserLifecycleAndRuntimePublication(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.ServerAddr = "127.0.0.1:0"
 	cfg.Web.Listen = "127.0.0.1:0"
-	server := NewServer(db, cfg, "")
+	server := NewServer(db, cfg, "", withWebCompilationStub())
 	t.Cleanup(func() { require.NoError(t, server.Close()) })
 
 	errCh, runtime := startServerAndWaitForRuntime(t, server)
@@ -106,7 +124,7 @@ func TestServerBrowserBindFailureAbortsWithoutRuntime(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.ServerAddr = "127.0.0.1:0"
 	cfg.Web.Listen = occupied.Addr().String()
-	server := NewServer(db, cfg, "")
+	server := NewServer(db, cfg, "", withWebCompilationStub())
 	t.Cleanup(func() { require.NoError(t, server.Close()) })
 
 	err = server.Start(t.Context())
@@ -135,12 +153,12 @@ func TestServerRestartInvalidatesBrowserSession(t *testing.T) {
 	cfg.ServerAddr = "127.0.0.1:0"
 	cfg.Web.Listen = "127.0.0.1:0"
 
-	first := NewServer(db, cfg, "")
+	first := NewServer(db, cfg, "", withWebCompilationStub())
 	firstErrCh, firstRuntime := startServerAndWaitForRuntime(t, first)
 	firstCredentials, firstCookie := bootstrapLocalBrowserSession(t, firstRuntime.WebOrigin)
 	stopTestServer(t, first, firstErrCh)
 
-	second := NewServer(db, cfg, "")
+	second := NewServer(db, cfg, "", withWebCompilationStub())
 	t.Cleanup(func() { require.NoError(t, second.Close()) })
 	secondErrCh, secondRuntime := startServerAndWaitForRuntime(t, second)
 	secondCredentials, secondCookie := bootstrapLocalBrowserSession(t, secondRuntime.WebOrigin)

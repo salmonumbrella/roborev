@@ -3,15 +3,20 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+
+	"go.kenn.io/roborev/internal/daemon"
 )
 
 var (
-	uiEnsureDaemon        = ensureDaemon
+	uiEnsureDaemon        = ensureUIDaemon
 	uiGetAnyRunningDaemon = getAnyRunningDaemon
+	uiListAllRuntimes     = daemon.ListAllRuntimes
 )
 
 func uiCmd() *cobra.Command {
@@ -23,7 +28,7 @@ func uiCmd() *cobra.Command {
 			if err := uiEnsureDaemon(); err != nil {
 				return err
 			}
-			runtimeInfo, err := uiGetAnyRunningDaemon()
+			runtimeInfo, err := uiRuntimeInfo()
 			if err != nil {
 				return fmt.Errorf("discover daemon: %w", err)
 			}
@@ -40,6 +45,34 @@ func uiCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func ensureUIDaemon() error {
+	if serverAddr == "" {
+		return ensureDaemon()
+	}
+	_, err := daemon.ProbeDaemon(getDaemonEndpoint(), 2*time.Second)
+	if err != nil {
+		return fmt.Errorf("daemon error: %w", err)
+	}
+	return nil
+}
+
+func uiRuntimeInfo() (*daemon.RuntimeInfo, error) {
+	if serverAddr == "" {
+		return uiGetAnyRunningDaemon()
+	}
+	selected := getDaemonEndpoint()
+	runtimes, err := uiListAllRuntimes()
+	if err != nil {
+		return nil, err
+	}
+	for _, runtimeInfo := range runtimes {
+		if slices.Contains(runtimeInfo.Endpoints(), selected) {
+			return runtimeInfo, nil
+		}
+	}
+	return nil, fmt.Errorf("browser metadata is unavailable for the selected daemon")
 }
 
 func validateUIArgs(_ *cobra.Command, args []string) error {

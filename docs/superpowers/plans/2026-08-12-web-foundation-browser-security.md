@@ -496,12 +496,15 @@ Add an `api-check` Make target:
 
 ```make
 api-check:
-	go test ./internal/daemon -run 'TestHumaOpenAPISpec$$'
+	# Generate the canonical spec and split Go client in a temporary tree,
+	# then compare them with the committed artifacts.
 	cd web && bun run generate:check
 ```
 
-Keep `api-generate` as the only command that rewrites canonical/generated
-artifacts.
+The target generates the live Huma schema and split Go client in a temporary
+directory and performs recursive byte comparisons before checking the browser
+types. Keep `api-generate` as the only command that rewrites
+canonical/generated artifacts.
 
 - [ ] **Step 6: Commit canonical browser type generation**
 
@@ -772,8 +775,12 @@ web-release-check: web-embed
 		go test ./internal/web -run '^TestEmbeddedReleaseDistribution$$' -count=1
 ```
 
-Make `build` depend on `web-embed` and restore the stub in an EXIT trap after
-the Go binary is compiled. Do not change `install` in this plan.
+Make `build` stage web assets and restore the stub in an EXIT trap after the Go
+binary is compiled. Apply the same transaction to `make install`. Direct source
+module builds, including `go install ...@latest` and the Nix source build,
+contain the compilation stub and deliberately omit browser runtime metadata;
+their CLI and TUI remain available. Document this distinction rather than
+serving an unusable stub as a browser application.
 
 - [ ] **Step 5: Verify staging leaves the worktree clean**
 
@@ -838,8 +845,10 @@ type WebConfig struct {
 Assert defaults are enabled and `127.0.0.1:0`. Assert the token is a recognized
 global sensitive key and is masked by config output. Reject origins with user
 info, paths, queries, fragments, unsupported schemes, or non-loopback HTTP.
-Reject non-loopback listens without both a token and HTTPS public origin. Accept
-loopback HTTP and canonicalize scheme/host casing and default ports.
+Reject non-loopback listens without both a token and HTTPS public origin.
+Require a token for any non-loopback public origin, including a loopback backend
+behind a reverse proxy. Accept loopback HTTP and canonicalize scheme/host casing
+and default ports.
 
 - [ ] **Step 2: Run the focused config tests and verify they fail**
 

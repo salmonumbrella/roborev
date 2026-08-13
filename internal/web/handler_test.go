@@ -52,6 +52,7 @@ func TestHandlerRejectsNonNavigationFallbacks(t *testing.T) {
 
 	paths := []string{
 		"/missing.js",
+		"/reviews/missing.js",
 		"/api/status",
 		"/openapi.json",
 		"/debug/pprof/",

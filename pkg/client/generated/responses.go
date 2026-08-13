@@ -241,19 +241,35 @@ type BackfillTokensErrorResponse = ErrorResponse
 
 type BackfillTokensErrorResponseJSON = ErrorResponse
 
-type LogoutWebSessionErrorResponse = ErrorModel
+type LogoutWebSessionErrorResponse = WebSessionError
+
+type LogoutWebSessionErrorResponseJSON = WebSessionError
+
+type LogoutWebSessionErrorResponseJSON403 = WebSessionError
 
 type GetWebSessionStatusResponse = WebSessionStatus
 
-type GetWebSessionStatusErrorResponse = ErrorModel
+type GetWebSessionStatusErrorResponse = WebSessionError
 
 type BootstrapWebSessionResponse = WebSessionCredentials
 
-type BootstrapWebSessionErrorResponse = ErrorModel
+type BootstrapWebSessionErrorResponse = WebSessionError
+
+type BootstrapWebSessionErrorResponseJSON = WebSessionError
+
+type BootstrapWebSessionErrorResponseJSON403 = WebSessionError
+
+type BootstrapWebSessionErrorResponseJSON415 = WebSessionError
 
 type LoginWebSessionResponse = WebSessionCredentials
 
-type LoginWebSessionErrorResponse = ErrorModel
+type LoginWebSessionErrorResponse = WebSessionError
+
+type LoginWebSessionErrorResponseJSON = WebSessionError
+
+type LoginWebSessionErrorResponseJSON403 = WebSessionError
+
+type LoginWebSessionErrorResponseJSON415 = WebSessionError
 
 type ListActivityResp struct {
 	HTTPResponse *http.Response
@@ -534,6 +550,9 @@ type LogoutWebSessionResp struct {
 	HTTPResponse *http.Response
 	Body         []byte
 	StatusCode   int
+	JSON400      *LogoutWebSessionErrorResponse
+	JSON401      *LogoutWebSessionErrorResponseJSON
+	JSON403      *LogoutWebSessionErrorResponseJSON403
 }
 
 type GetWebSessionStatusResp struct {
@@ -541,6 +560,7 @@ type GetWebSessionStatusResp struct {
 	Body         []byte
 	StatusCode   int
 	JSON200      *GetWebSessionStatusResponse
+	JSON400      *GetWebSessionStatusErrorResponse
 }
 
 type BootstrapWebSessionResp struct {
@@ -548,6 +568,10 @@ type BootstrapWebSessionResp struct {
 	Body         []byte
 	StatusCode   int
 	JSON200      *BootstrapWebSessionResponse
+	JSON400      *BootstrapWebSessionErrorResponse
+	JSON401      *BootstrapWebSessionErrorResponseJSON
+	JSON403      *BootstrapWebSessionErrorResponseJSON403
+	JSON415      *BootstrapWebSessionErrorResponseJSON415
 }
 
 type LoginWebSessionResp struct {
@@ -555,4 +579,8 @@ type LoginWebSessionResp struct {
 	Body         []byte
 	StatusCode   int
 	JSON200      *LoginWebSessionResponse
+	JSON400      *LoginWebSessionErrorResponse
+	JSON401      *LoginWebSessionErrorResponseJSON
+	JSON403      *LoginWebSessionErrorResponseJSON403
+	JSON415      *LoginWebSessionErrorResponseJSON415
 }

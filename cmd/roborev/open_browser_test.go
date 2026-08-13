@@ -20,18 +20,18 @@ func TestOpenBrowserUsesPlatformCommandWithoutShell(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.goos, func(t *testing.T) {
 			originalGOOS := browserGOOS
-			originalStart := startBrowserCommand
+			originalRun := runBrowserCommand
 			browserGOOS = tt.goos
 			var gotName string
 			var gotArgs []string
-			startBrowserCommand = func(name string, args ...string) error {
+			runBrowserCommand = func(name string, args ...string) error {
 				gotName = name
 				gotArgs = append([]string(nil), args...)
 				return nil
 			}
 			t.Cleanup(func() {
 				browserGOOS = originalGOOS
-				startBrowserCommand = originalStart
+				runBrowserCommand = originalRun
 			})
 
 			require.NoError(t, platformOpenBrowserURL("https://example.com/reviews"))

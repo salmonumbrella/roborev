@@ -1779,6 +1779,20 @@ func (w WebSessionCredentials) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(w))
 }
 
+type WebSessionError struct {
+	// Schema A URL to the JSON Schema for this object.
+	Schema    *string `json:"$schema,omitempty"`
+	ErrorData string  `json:"error" validate:"required"`
+}
+
+func (w WebSessionError) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(w))
+}
+
+func (s WebSessionError) Error() string {
+	return "unmapped client error"
+}
+
 type WebSessionStatus struct {
 	// Schema A URL to the JSON Schema for this object.
 	Schema         *string                        `json:"$schema,omitempty"`

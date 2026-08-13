@@ -164,3 +164,18 @@ func TestBrowserSessionRoutesAppearOnlyInCombinedOpenAPI(t *testing.T) {
 	mux.ServeHTTP(recorder, request)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 }
+
+func TestBrowserSessionOpenAPIDocumentsJSONErrors(t *testing.T) {
+	spec, err := OpenAPISpec()
+	require.NoError(t, err)
+	var document map[string]any
+	require.NoError(t, json.Unmarshal(spec, &document))
+	paths := document["paths"].(map[string]any)
+	login := paths["/api/ui/session/login"].(map[string]any)["post"].(map[string]any)
+	responses := login["responses"].(map[string]any)
+	assert.NotContains(t, responses, "default")
+	unauthorized := responses["401"].(map[string]any)
+	content := unauthorized["content"].(map[string]any)
+	assert.Contains(t, content, "application/json")
+	assert.NotContains(t, content, "application/problem+json")
+}

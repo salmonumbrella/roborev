@@ -2,6 +2,8 @@ package daemon
 
 import (
 	"context"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -21,6 +23,10 @@ type WebSessionStatus struct {
 	Authentication string     `json:"authentication" enum:"local,token"`
 	Authenticated  bool       `json:"authenticated"`
 	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
+}
+
+type WebSessionError struct {
+	Error string `json:"error"`
 }
 
 type WebLoginInput struct {
@@ -47,12 +53,14 @@ func (s *Server) registerBrowserRoutes(api huma.API) {
 			operation.OperationID = "login-web-session"
 			operation.Summary = "Exchange a daemon token for a browser session"
 			operation.Tags = []string{"web-session"}
+			setWebSessionErrorResponses(api, operation, http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusUnsupportedMediaType)
 		})
 	huma.Post(api, "/api/ui/session/bootstrap", unavailableWebBootstrap,
 		func(operation *huma.Operation) {
 			operation.OperationID = "bootstrap-web-session"
 			operation.Summary = "Mint tab credentials from an ambient browser session"
 			operation.Tags = []string{"web-session"}
+			setWebSessionErrorResponses(api, operation, http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusUnsupportedMediaType)
 		})
 	huma.Delete(api, "/api/ui/session", unavailableWebLogout,
 		func(operation *huma.Operation) {
@@ -60,13 +68,30 @@ func (s *Server) registerBrowserRoutes(api huma.API) {
 			operation.Summary = "Invalidate a browser session"
 			operation.Tags = []string{"web-session"}
 			operation.DefaultStatus = 204
+			setWebSessionErrorResponses(api, operation, http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden)
 		})
 	huma.Get(api, "/api/ui/session", unavailableWebSessionStatus,
 		func(operation *huma.Operation) {
 			operation.OperationID = "get-web-session-status"
 			operation.Summary = "Get browser authentication status"
 			operation.Tags = []string{"web-session"}
+			setWebSessionErrorResponses(api, operation, http.StatusBadRequest)
 		})
+}
+
+func setWebSessionErrorResponses(api huma.API, operation *huma.Operation, statuses ...int) {
+	if operation.Responses == nil {
+		operation.Responses = make(map[string]*huma.Response)
+	}
+	schema := jsonSchema(api, WebSessionError{})
+	for _, status := range statuses {
+		operation.Responses[strconv.Itoa(status)] = &huma.Response{
+			Description: http.StatusText(status),
+			Content: map[string]*huma.MediaType{
+				"application/json": {Schema: schema},
+			},
+		}
+	}
 }
 
 func unavailableWebLogin(context.Context, *WebLoginInput) (*WebSessionCredentialsOutput, error) {

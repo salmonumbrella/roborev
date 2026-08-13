@@ -89,4 +89,26 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Roborev" }),
     ).toBeInTheDocument();
   });
+
+  test("re-bootstraps a local session after disconnect", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response(200, credentials))
+      .mockResolvedValueOnce(response(204))
+      .mockResolvedValueOnce(response(200, credentials));
+    vi.stubGlobal("fetch", fetchMock);
+    render(App);
+
+    await screen.findByRole("heading", { name: "Roborev" });
+    await fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Roborev" }),
+    ).toBeInTheDocument();
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      "/api/ui/session/bootstrap",
+      "/api/ui/session",
+      "/api/ui/session/bootstrap",
+    ]);
+  });
 });
