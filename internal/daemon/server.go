@@ -40,6 +40,10 @@ type Server struct {
 	broadcaster       Broadcaster
 	workerPool        *WorkerPool
 	httpServer        *http.Server
+	browserServer     *http.Server
+	browserListener   net.Listener
+	browserRuntime    *BrowserRuntimeInfo
+	webDevOrigin      string
 	syncWorker        *storage.SyncWorker
 	ciPoller          *CIPoller
 	hookRunner        *HookRunner
@@ -72,8 +76,19 @@ var (
 	listenAuxiliaryEndpointForServer = listenAuxiliaryEndpoint
 )
 
-// NewServer creates a new daemon server
-func NewServer(db *storage.DB, cfg *config.Config, configPath string) *Server {
+// ServerOption customizes a daemon server before it starts.
+type ServerOption func(*Server)
+
+// WithWebDevelopmentOrigin adds one exact loopback origin for the disposable
+// development server. Production callers must not set this option.
+func WithWebDevelopmentOrigin(origin string) ServerOption {
+	return func(server *Server) {
+		server.webDevOrigin = origin
+	}
+}
+
+// NewServer creates a new daemon server.
+func NewServer(db *storage.DB, cfg *config.Config, configPath string, options ...ServerOption) *Server {
 	// Initialize error log
 	errorLog, err := NewErrorLog(DefaultErrorLogPath())
 	if err != nil {
@@ -86,7 +101,11 @@ func NewServer(db *storage.DB, cfg *config.Config, configPath string) *Server {
 		log.Printf("Warning: failed to create activity log: %v", err)
 	}
 
-	return newServerWithLogs(db, cfg, configPath, errorLog, activityLog)
+	server := newServerWithLogs(db, cfg, configPath, errorLog, activityLog)
+	for _, option := range options {
+		option(server)
+	}
+	return server
 }
 
 func newServerWithLogs(
@@ -314,10 +333,21 @@ func (s *Server) Start(ctx context.Context) error {
 	s.alternateEndpoint = alternate
 	s.endpointMu.Unlock()
 
+	browserRuntime, err := s.startBrowserServer(cfg.Web)
+	if err != nil {
+		_ = s.httpServer.Close()
+		s.configWatcher.Stop()
+		s.workerPool.Stop()
+		return err
+	}
+	s.endpointMu.Lock()
+	s.browserRuntime = browserRuntime
+	s.endpointMu.Unlock()
+
 	s.startPanelSweep(ctx)
 
 	// Write runtime info only after the HTTP server is accepting requests.
-	if err := WriteRuntime(ep, alternate, version.Version); err != nil {
+	if err := WriteRuntime(ep, alternate, version.Version, browserRuntime); err != nil {
 		log.Printf("Warning: failed to write runtime info: %v", err)
 	}
 
@@ -526,9 +556,6 @@ func (s *Server) stopOnce0() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Remove runtime info
-	RemoveRuntime()
-
 	// Stop telemetry loop
 	close(s.telemetryStop)
 
@@ -536,9 +563,20 @@ func (s *Server) stopOnce0() error {
 	s.configWatcher.Stop()
 
 	// Stop HTTP server
+	s.endpointMu.Lock()
+	browserServer := s.browserServer
+	s.endpointMu.Unlock()
+	if browserServer != nil {
+		if err := browserServer.Shutdown(ctx); err != nil {
+			log.Printf("Browser HTTP server shutdown error: %v", err)
+		}
+	}
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		log.Printf("HTTP server shutdown error: %v", err)
 	}
+
+	// Remove discovery only after both listeners have stopped accepting work.
+	RemoveRuntime()
 
 	// Clean up Unix domain socket (if we created it)
 	s.endpointMu.Lock()

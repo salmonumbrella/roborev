@@ -36,3 +36,10 @@ trigger_paths = ["["]
 	assert.Contains(t, err.Error(), "invalid [auto_design_review] config")
 	assert.Contains(t, err.Error(), "trigger_paths")
 }
+
+func TestDaemonRunHidesWebDevelopmentOrigin(t *testing.T) {
+	cmd := daemonRunCmd()
+	flag := cmd.Flags().Lookup("web-dev-origin")
+	require.NotNil(t, flag)
+	assert.True(t, flag.Hidden)
+}
