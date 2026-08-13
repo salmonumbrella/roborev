@@ -239,7 +239,7 @@ Run:
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `feat(web): move review state and workflows`
 
@@ -266,20 +266,20 @@ Commit: `feat(web): move review state and workflows`
 - Produces: the moved filter, picker, status, table, row, drawer, review,
     comments, log, prompt, badge, and shortcut components.
 
-- [ ] **Step 1: Move tests first**
+- [x] **Step 1: Move tests first**
 
 Move sanitizer, task-list, Shiki-theme, badge, filter, picker, row, drawer,
 daemon-status, help-modal, footer-layout, and composer-inset tests. Preserve
 assertions; change only runner imports, generated types, and context harnesses.
 
-- [ ] **Step 2: Verify the tests fail**
+- [x] **Step 2: Verify the tests fail**
 
 Run:
 `bun x vitest run web/src/lib/markdown web/src/lib/components/reviews`
 
 Expected: FAIL because the renderer and components are absent.
 
-- [ ] **Step 3: Move the renderer**
+- [x] **Step 3: Move the renderer**
 
 Move the Marked extensions, code-fence planning, Shiki singleton, nonce-bound
 style sanitizer, image sanitizer, Mermaid fences, DOMPurify configuration,
@@ -288,14 +288,14 @@ marker to `data-roborev-shiki`. Remove only provider item-reference and
 image-proxy rewriting. Keep safe absolute HTTP(S), same-origin, anchor, and
 data-image forms after sanitization.
 
-- [ ] **Step 4: Move components and styles**
+- [x] **Step 4: Move components and styles**
 
 Move component markup and scoped styles without visual cleanup. Replace only
 host context/runtime imports. Keep native comment mutations. Move the global
 theme/reset, review status/verdict tokens, and Markdown rules required by the
 components; omit unrelated tokens.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 
