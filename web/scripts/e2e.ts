@@ -10,6 +10,12 @@ interface RuntimeRecord {
   metadata?: Record<string, string>;
 }
 
+interface SignalEmitter {
+  exitCode?: string | number | null;
+  once(signal: "SIGINT" | "SIGTERM", listener: () => void): unknown;
+  removeListener(signal: "SIGINT" | "SIGTERM", listener: () => void): unknown;
+}
+
 const browserToken = "roborev-e2e-browser-token";
 
 export async function runBrowserTests(): Promise<number> {
@@ -27,6 +33,23 @@ export async function runBrowserTests(): Promise<number> {
   );
   let assetsEmbedded = false;
   let daemon: ChildProcess | undefined;
+  const commands = new Set<ChildProcess>();
+  let cleanupPromise: Promise<void> | undefined;
+  const cleanup = (): Promise<void> => {
+    cleanupPromise ??= (async () => {
+      await Promise.all(Array.from(commands, stop));
+      if (daemon) {
+        await stop(daemon);
+      }
+      if (assetsEmbedded) {
+        await run("bun", ["run", "assets:restore"], webRoot);
+        assetsEmbedded = false;
+      }
+      await rm(scratch, { recursive: true, force: true });
+    })();
+    return cleanupPromise;
+  };
+  const removeSignalHandlers = installCleanupSignalHandlers(cleanup);
 
   try {
     const sourceIndex = await readFile(
@@ -51,6 +74,9 @@ export async function runBrowserTests(): Promise<number> {
       "go",
       ["run", "./internal/testutil/cmd/seed-web", "-out", database],
       repoRoot,
+      {},
+      true,
+      commands,
     );
     await mkdir(jobLogDir, { recursive: true, mode: 0o700 });
     await writeFile(
@@ -58,11 +84,18 @@ export async function runBrowserTests(): Promise<number> {
       "fixture review started\nstreamed analysis complete\n",
       { mode: 0o600 },
     );
-    await run("bun", ["run", "build"], webRoot);
-    await run("bun", ["run", "assets:embed"], webRoot);
+    await run("bun", ["run", "build"], webRoot, {}, true, commands);
     assetsEmbedded = true;
-    await run("go", ["build", "-o", binary, "./cmd/roborev"], repoRoot);
-    await run("bun", ["run", "assets:restore"], webRoot);
+    await run("bun", ["run", "assets:embed"], webRoot, {}, true, commands);
+    await run(
+      "go",
+      ["build", "-o", binary, "./cmd/roborev"],
+      repoRoot,
+      {},
+      true,
+      commands,
+    );
+    await run("bun", ["run", "assets:restore"], webRoot, {}, true, commands);
     assetsEmbedded = false;
 
     daemon = spawn(
@@ -90,16 +123,33 @@ export async function runBrowserTests(): Promise<number> {
       webRoot,
       { ROBOREV_E2E_ORIGIN: origin, ROBOREV_E2E_TOKEN: browserToken },
       false,
+      commands,
     );
   } finally {
-    if (daemon) {
-      await stop(daemon);
-    }
-    if (assetsEmbedded) {
-      await run("bun", ["run", "assets:restore"], webRoot);
-    }
-    await rm(scratch, { recursive: true, force: true });
+    removeSignalHandlers();
+    await cleanup();
   }
+}
+
+export function installCleanupSignalHandlers(
+  cleanup: () => Promise<void>,
+  target: SignalEmitter = process,
+): () => void {
+  let handlingSignal = false;
+  const handle = (exitCode: number) => () => {
+    if (handlingSignal) return;
+    handlingSignal = true;
+    target.exitCode = exitCode;
+    void cleanup();
+  };
+  const interrupt = handle(130);
+  const terminate = handle(143);
+  target.once("SIGINT", interrupt);
+  target.once("SIGTERM", terminate);
+  return () => {
+    target.removeListener("SIGINT", interrupt);
+    target.removeListener("SIGTERM", terminate);
+  };
 }
 
 export function isolatedDaemonEnvironment(
@@ -128,13 +178,15 @@ async function run(
   cwd: string,
   extraEnvironment: Record<string, string> = {},
   rejectOnFailure = true,
+  children?: Set<ChildProcess>,
 ): Promise<number> {
   const child = spawn(command, args, {
     cwd,
     env: { ...process.env, ...extraEnvironment },
     stdio: "inherit",
   });
-  const code = await childExit(child);
+  children?.add(child);
+  const code = await childExit(child).finally(() => children?.delete(child));
   if (rejectOnFailure && code !== 0) {
     throw new Error(`${command} exited with status ${code}`);
   }

@@ -1,6 +1,8 @@
-import { describe, expect, test } from "vitest";
+import { EventEmitter } from "node:events";
 
-import { isolatedDaemonEnvironment } from "./e2e";
+import { describe, expect, test, vi } from "vitest";
+
+import { installCleanupSignalHandlers, isolatedDaemonEnvironment } from "./e2e";
 
 describe("browser test runner", () => {
   test("isolates daemon state and clears browser test routing", () => {
@@ -31,5 +33,23 @@ describe("browser test runner", () => {
     expect(environment.ROBOREV_WEB_DEV_BACKEND).toBeUndefined();
     expect(environment.ROBOREV_E2E_ORIGIN).toBeUndefined();
     expect(environment.ROBOREV_E2E_TOKEN).toBeUndefined();
+  });
+
+  test.each([
+    ["SIGINT", 130],
+    ["SIGTERM", 143],
+  ] as const)("cleans up once after %s", async (signal, exitCode) => {
+    const target = new EventEmitter() as EventEmitter & { exitCode?: number };
+    const cleanup = vi.fn(async () => {});
+    const remove = installCleanupSignalHandlers(cleanup, target);
+
+    target.emit(signal);
+    target.emit(signal);
+
+    await vi.waitFor(() => expect(cleanup).toHaveBeenCalledTimes(1));
+    expect(target.exitCode).toBe(exitCode);
+    remove();
+    expect(target.listenerCount("SIGINT")).toBe(0);
+    expect(target.listenerCount("SIGTERM")).toBe(0);
   });
 });
