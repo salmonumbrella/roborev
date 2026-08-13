@@ -259,6 +259,12 @@ main {
   padding: 2rem 1.25rem;
 }
 
+main.application {
+  display: flex;
+  padding: 0;
+  place-items: initial;
+}
+
 .card {
   width: min(100%, 38rem);
   padding: clamp(1.5rem, 5vw, 2.5rem);

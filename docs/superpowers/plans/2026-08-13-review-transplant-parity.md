@@ -332,20 +332,20 @@ Commit: `feat(web): move review presentation and markdown`
     `navigateToReview(jobId?: number, options?: { replace?: boolean })`.
 - Consumes: one authenticated runtime and store composition.
 
-- [ ] **Step 1: Write failing route/composition tests**
+- [x] **Step 1: Write failing route/composition tests**
 
 Cover initial deep links, invalid IDs, push/replace history, popstate, selection
 sync, runtime disposal, polling/event cleanup, and the analytics placeholder.
 Change the App success assertion from the foundation card to the job table.
 
-- [ ] **Step 2: Verify tests fail**
+- [x] **Step 2: Verify tests fail**
 
 Run:
 `bun x vitest run web/src/lib/router web/src/lib/views web/src/App.test.ts`
 
 Expected: FAIL because routing and composition do not exist.
 
-- [ ] **Step 3: Move the view and keyboard behavior**
+- [x] **Step 3: Move the view and keyboard behavior**
 
 Move the review view. Preserve `j`, `k`, arrow panel expansion, Enter,
 Escape, `x`, `r`, `a`, `c`, `l`, `p`, `y`, `h`, `/`, and
@@ -353,7 +353,7 @@ Escape, `x`, `r`, `a`, `c`, `l`, `p`, `y`, `h`, `/`, and
 runtime/stores once after bootstrap and disposes them on logout or unmount.
 `/analytics` remains an explicit placeholder.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 

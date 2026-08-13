@@ -2,6 +2,7 @@
   import { onMount, tick } from "svelte";
 
   import { bootstrapSession, login, logout } from "./lib/api/session";
+  import AppShell from "./lib/components/AppShell.svelte";
 
   type ViewState = "checking" | "login" | "authenticated" | "error";
 
@@ -63,7 +64,7 @@
   }
 </script>
 
-<main>
+<main class:application={view === "authenticated"}>
   {#if view === "checking"}
     <section class="card status" aria-live="polite">
       <p class="eyebrow">Roborev</p>
@@ -92,25 +93,7 @@
       </form>
     </section>
   {:else if view === "authenticated"}
-    <section class="card foundation">
-      <header>
-        <div>
-          <p class="eyebrow">Browser foundation</p>
-          <h1>Roborev</h1>
-        </div>
-        <button class="secondary" type="button" onclick={disconnect}>
-          Disconnect
-        </button>
-      </header>
-      <p class="muted">
-        The native review workspace and project analytics will land in the next
-        migration stages.
-      </p>
-      <nav aria-label="Application">
-        <a href="/reviews">Reviews</a>
-        <a href="/analytics">Analytics</a>
-      </nav>
-    </section>
+    <AppShell ondisconnect={disconnect} />
   {:else}
     <section class="card status" role="alert">
       <p class="eyebrow">Connection problem</p>
