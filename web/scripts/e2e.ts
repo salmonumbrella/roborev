@@ -19,6 +19,7 @@ export async function runBrowserTests(): Promise<number> {
   const dataDir = join(scratch, "data");
   const homeDir = join(scratch, "home");
   const database = join(scratch, "reviews.db");
+  const jobLogDir = join(dataDir, "logs", "jobs");
   const config = join(scratch, "config.toml");
   const binary = join(
     scratch,
@@ -50,6 +51,12 @@ export async function runBrowserTests(): Promise<number> {
       "go",
       ["run", "./internal/testutil/cmd/seed-web", "-out", database],
       repoRoot,
+    );
+    await mkdir(jobLogDir, { recursive: true, mode: 0o700 });
+    await writeFile(
+      join(jobLogDir, "52.log"),
+      "fixture review started\nstreamed analysis complete\n",
+      { mode: 0o600 },
     );
     await run("bun", ["run", "build"], webRoot);
     await run("bun", ["run", "assets:embed"], webRoot);

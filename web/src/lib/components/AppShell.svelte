@@ -85,7 +85,9 @@
 <style>
   .app-shell {
     display: flex;
+    width: 100%;
     min-height: 0;
+    min-width: 0;
     flex: 1;
     flex-direction: column;
     background: var(--bg-primary);
@@ -141,6 +143,7 @@
   .app-content {
     display: flex;
     min-height: 0;
+    min-width: 0;
     flex: 1;
   }
 </style>

@@ -3156,6 +3156,12 @@ func (s *Server) humaJobOutput(
 
 		if input.Stream != "1" {
 			lines := s.workerPool.GetJobOutput(jobID)
+			if len(lines) == 0 && job.Status != storage.JobStatusRunning {
+				persisted, err := readNormalizedJobOutput(jobID, job.Agent)
+				if err == nil {
+					lines = persisted
+				}
+			}
 			if lines == nil {
 				lines = []OutputLine{}
 			}

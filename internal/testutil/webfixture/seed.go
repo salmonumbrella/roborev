@@ -15,7 +15,7 @@ const (
 	CancelJobID      int64 = 50
 	CloseReviewJobID int64 = 51
 	CommentJobID     int64 = 52
-	FailedJobID      int64 = 49
+	FailedJobID      int64 = 48
 )
 
 const sqliteTime = "2006-01-02 15:04:05"
