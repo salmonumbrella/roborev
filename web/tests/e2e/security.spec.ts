@@ -95,4 +95,28 @@ test.describe.serial("browser listener security", () => {
       ),
     ).toEqual([]);
   });
+
+  test("requires a new login after the daemon restarts", async ({ page }) => {
+    await openReview(page, 52);
+    const controlOrigin = process.env.ROBOREV_E2E_CONTROL_ORIGIN;
+    if (!controlOrigin)
+      throw new Error("browser test control origin is missing");
+
+    const restart = await fetch(`${controlOrigin}/restart`, { method: "POST" });
+    expect(restart.status).toBe(204);
+    await page.reload();
+
+    const login = page.getByLabel("Daemon token");
+    await expect(login).toBeVisible();
+    await expect(page.getByRole("region", { name: "Review jobs" })).toHaveCount(
+      0,
+    );
+    const token = process.env.ROBOREV_E2E_TOKEN;
+    if (!token) throw new Error("browser test token is missing");
+    await login.fill(token);
+    await page.getByRole("button", { name: "Connect" }).click();
+    await expect(
+      page.getByRole("region", { name: "Review jobs" }),
+    ).toBeVisible();
+  });
 });

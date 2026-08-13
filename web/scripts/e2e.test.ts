@@ -13,6 +13,7 @@ describe("browser test runner", () => {
         ROBOREV_DATA_DIR: "/developer/data",
         ROBOREV_WEB_DEV_BACKEND: "http://127.0.0.1:7373",
         ROBOREV_E2E_ORIGIN: "https://unexpected.example",
+        ROBOREV_E2E_CONTROL_ORIGIN: "http://127.0.0.1:9000",
         ROBOREV_E2E_TOKEN: "unexpected-token",
         ROBOREV_TELEMETRY_ENABLED: "true",
         PATH: "/test/bin",
@@ -32,6 +33,7 @@ describe("browser test runner", () => {
     });
     expect(environment.ROBOREV_WEB_DEV_BACKEND).toBeUndefined();
     expect(environment.ROBOREV_E2E_ORIGIN).toBeUndefined();
+    expect(environment.ROBOREV_E2E_CONTROL_ORIGIN).toBeUndefined();
     expect(environment.ROBOREV_E2E_TOKEN).toBeUndefined();
   });
 

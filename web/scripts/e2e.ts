@@ -1,5 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer as createHTTPServer } from "node:http";
+import {
+  createServer as createNetServer,
+  type AddressInfo,
+  type Server,
+} from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,10 +39,14 @@ export async function runBrowserTests(): Promise<number> {
   );
   let assetsEmbedded = false;
   let daemon: ChildProcess | undefined;
+  let controlServer: Server | undefined;
   const commands = new Set<ChildProcess>();
   let cleanupPromise: Promise<void> | undefined;
   const cleanup = (): Promise<void> => {
     cleanupPromise ??= (async () => {
+      if (controlServer) {
+        await closeServer(controlServer);
+      }
       await Promise.all(Array.from(commands, stop));
       if (daemon) {
         await stop(daemon);
@@ -64,9 +74,10 @@ export async function runBrowserTests(): Promise<number> {
       mkdir(dataDir, { recursive: true, mode: 0o700 }),
       mkdir(homeDir, { recursive: true, mode: 0o700 }),
     ]);
+    const browserPort = await reserveLoopbackPort();
     await writeFile(
       config,
-      `max_workers = 0\n\n[web]\nenabled = true\nlisten = "127.0.0.1:0"\nauth_token = "${browserToken}"\n`,
+      `max_workers = 0\n\n[web]\nenabled = true\nlisten = "127.0.0.1:${browserPort}"\nauth_token = "${browserToken}"\n`,
       { mode: 0o600 },
     );
 
@@ -98,30 +109,56 @@ export async function runBrowserTests(): Promise<number> {
     await run("bun", ["run", "assets:restore"], webRoot, {}, true, commands);
     assetsEmbedded = false;
 
-    daemon = spawn(
-      binary,
-      [
-        "daemon",
-        "run",
-        "--db",
-        database,
-        "--config",
-        config,
-        "--addr",
-        "127.0.0.1:0",
-      ],
-      {
-        cwd: repoRoot,
-        env: isolatedDaemonEnvironment(process.env, dataDir, homeDir),
-        stdio: "inherit",
-      },
-    );
+    const startDaemon = (): ChildProcess =>
+      spawn(
+        binary,
+        [
+          "daemon",
+          "run",
+          "--db",
+          database,
+          "--config",
+          config,
+          "--addr",
+          "127.0.0.1:0",
+        ],
+        {
+          cwd: repoRoot,
+          env: isolatedDaemonEnvironment(process.env, dataDir, homeDir),
+          stdio: "inherit",
+        },
+      );
+    daemon = startDaemon();
     const origin = await waitForBrowserOrigin(dataDir, daemon);
+    controlServer = createHTTPServer((request, response) => {
+      if (request.method !== "POST" || request.url !== "/restart") {
+        response.writeHead(404).end();
+        return;
+      }
+      void (async () => {
+        if (daemon) await stop(daemon);
+        daemon = startDaemon();
+        const restartedOrigin = await waitForBrowserOrigin(dataDir, daemon);
+        if (restartedOrigin !== origin) {
+          throw new Error("browser origin changed after daemon restart");
+        }
+        response.writeHead(204).end();
+      })().catch((error: unknown) => {
+        response
+          .writeHead(500, { "Content-Type": "text/plain" })
+          .end(error instanceof Error ? error.message : String(error));
+      });
+    });
+    const controlOrigin = await listenLoopback(controlServer);
     return await run(
       "bunx",
       ["playwright", "test", "--config", "playwright.config.ts"],
       webRoot,
-      { ROBOREV_E2E_ORIGIN: origin, ROBOREV_E2E_TOKEN: browserToken },
+      {
+        ROBOREV_E2E_CONTROL_ORIGIN: controlOrigin,
+        ROBOREV_E2E_ORIGIN: origin,
+        ROBOREV_E2E_TOKEN: browserToken,
+      },
       false,
       commands,
     );
@@ -168,8 +205,37 @@ export function isolatedDaemonEnvironment(
   };
   delete environment.ROBOREV_WEB_DEV_BACKEND;
   delete environment.ROBOREV_E2E_ORIGIN;
+  delete environment.ROBOREV_E2E_CONTROL_ORIGIN;
   delete environment.ROBOREV_E2E_TOKEN;
   return environment;
+}
+
+async function reserveLoopbackPort(): Promise<number> {
+  const server = createNetServer();
+  const origin = await listenLoopback(server);
+  const port = Number(new URL(origin).port);
+  await closeServer(server);
+  return port;
+}
+
+async function listenLoopback(server: Server): Promise<string> {
+  await new Promise<void>((resolveListen, rejectListen) => {
+    server.once("error", rejectListen);
+    server.listen(0, "127.0.0.1", () => {
+      server.removeListener("error", rejectListen);
+      resolveListen();
+    });
+  });
+  const address = server.address() as AddressInfo | null;
+  if (address === null) throw new Error("loopback test server did not bind");
+  return `http://127.0.0.1:${address.port}`;
+}
+
+async function closeServer(server: Server): Promise<void> {
+  if (!server.listening) return;
+  await new Promise<void>((resolveClose, rejectClose) => {
+    server.close((error) => (error ? rejectClose(error) : resolveClose()));
+  });
 }
 
 async function run(
