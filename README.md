@@ -49,6 +49,7 @@ cd your-repo
 roborev init          # Install post-commit hook
 git commit -m "..."   # Reviews happen automatically
 roborev tui           # View reviews in interactive UI
+roborev ui            # Open reviews in the native browser UI
 ```
 
 If roborev is managed by a version manager, `roborev init` and
@@ -77,6 +78,8 @@ You can also choose the exact binary path with
   Reviews are orchestrated on your machine using the coding agents
   you already have configured.
 - **Interactive TUI** - Real-time review queue with vim-style navigation.
+- **Native Browser UI** - Browse, filter, inspect, comment on, close, cancel,
+  and rerun reviews from the application embedded in the local daemon.
 - **Review Verification** - `roborev compact` verifies findings against
   current code, filters false positives, and consolidates related issues
   into a single review.

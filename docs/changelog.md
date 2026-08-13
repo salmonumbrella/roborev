@@ -9,11 +9,12 @@ All notable changes to roborev, grouped by minor release.
 
 **New features**
 
-- Roborev now embeds an authenticated native browser application on a separate
-    daemon listener. `roborev ui [job-id]` opens the runtime-advertised origin,
-    with loopback bootstrap for local use and token exchange for remote HTTPS
-    deployments. Browser sessions and release assets are validated without
-    exposing the private CLI listener.
+- Roborev now embeds an authenticated native browser review workspace on a
+    separate daemon listener. `roborev ui [job-id]` opens the job list or a
+    review deep link with filtering, sorting, panel detail, Markdown output,
+    comments, logs, prompts, keyboard controls, and review/job mutations. Local
+    use bootstraps automatically; remote HTTPS deployments exchange a token for
+    a browser session without exposing the private CLI listener.
 - Pi agents accept global `[agent.pi] launch_args`, passed as tokenized
     arguments to every Pi invocation before roborev-managed workflow and safety
     options. This allows isolated classifier jobs to load extension-defined

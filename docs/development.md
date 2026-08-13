@@ -166,6 +166,7 @@ run its complete checks from the repository root:
 bun install --frozen-lockfile
 bun run web:check
 bun run web:test
+bun run web:test:e2e
 make api-check
 make web-release-check
 ```
@@ -174,6 +175,12 @@ make web-release-check
 document. `make web-release-check` builds the SPA, validates its Vite manifest,
 temporarily stages it for Go embedding, tests the embedded release, and always
 restores the tracked compilation stub.
+
+`bun run web:test:e2e` builds and embeds the production SPA into a scratch Go
+binary, seeds a synthetic SQLite database, starts a token-authenticated daemon
+with no workers, and runs the review and browser-security scenarios in Chromium.
+The runner uses a disposable home and data directory, restores the compilation
+stub, and removes all temporary state on success, failure, or interruption.
 
 Use `make web-dev` for full-stack development. It starts Vite and a branch-built
 daemon with a disposable data directory, SQLite database, and configuration; it

@@ -726,3 +726,21 @@ The migration is complete when:
 - release and package validation prevent incomplete artifacts; and
 - public docs describe operation and deployment without disclosing private
     project or infrastructure details.
+
+## Implementation checkpoint: native Reviews
+
+As of 2026-08-13, the daemon browser listener, browser session boundary,
+release-asset pipeline, and code-moved Reviews application are implemented. The
+native application owns the review list, project/status/ref filters, sorting,
+pagination, panel expansion, deep-linked detail, Markdown rendering, comments,
+logs, prompts, mutations, keyboard controls, and reconnect/recovery behavior.
+
+The parity lane builds the production SPA, embeds it in a scratch binary, seeds
+the production SQLite schema with synthetic data, starts the real authenticated
+browser listener, and runs 24 Chromium scenarios. The lane also checks fresh-tab
+bootstrap, session and CSRF headers, forbidden browser routes, shipped content
+security policy behavior, stale-data handling, and narrow-layout scrolling.
+
+This checkpoint does not complete the migration. The projection endpoint,
+source-shipping presentation package, contextual host adapter, native analytics,
+and deployment cutover remain separate follow-on plans.

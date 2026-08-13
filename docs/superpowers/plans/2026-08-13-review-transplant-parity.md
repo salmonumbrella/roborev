@@ -381,7 +381,7 @@ Commit: `feat(web): route the transplanted review workspace`
 - Produces: `webfixture.Seed(path string) error`.
 - Produces: `go run ./internal/testutil/cmd/seed-web -out <scratch.db>`.
 
-- [ ] **Step 1: Write the failing fixture test**
+- [x] **Step 1: Write the failing fixture test**
 
 Seed a temporary path, open it through `storage.Open`, and assert at least 50
 rows across two synthetic projects, every terminal/running state, compact
@@ -389,19 +389,19 @@ review output, a synthesis parent with two members, priced/zero/unpriced usage,
 open/closed reviews, comments, and stable mutation targets. Assert roots begin
 with `/workspace/project-` and contain no home path or external hostname.
 
-- [ ] **Step 2: Verify the fixture test fails**
+- [x] **Step 2: Verify the fixture test fails**
 
 Run: `go test ./internal/testutil/webfixture -count=1`
 
 Expected: FAIL because the package is absent.
 
-- [ ] **Step 3: Implement through the current schema**
+- [x] **Step 3: Implement through the current schema**
 
 Call `storage.Open(path)` first, then insert deterministic rows through its
 embedded `*sql.DB`. Do not copy the production schema into the fixture. Use
 UTC timestamps and current columns.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 
@@ -439,26 +439,26 @@ Commit: `test(web): add deterministic review fixtures`
 - Produces: one scratch embedded daemon and Chromium session pointed at its
     published browser origin.
 
-- [ ] **Step 1: Write the failing runner isolation test**
+- [x] **Step 1: Write the failing runner isolation test**
 
 With injected spawn/temp functions, assert scratch HOME, data/config/database
 paths, loopback addresses, cleared inherited endpoint/token variables, runtime
 readiness, and child cleanup on success, failure, SIGINT, and SIGTERM.
 
-- [ ] **Step 2: Verify the runner test fails**
+- [x] **Step 2: Verify the runner test fails**
 
 Run: `bun x vitest run web/scripts/e2e.test.ts`
 
 Expected: FAIL because the runner is absent.
 
-- [ ] **Step 3: Implement the isolated runner**
+- [x] **Step 3: Implement the isolated runner**
 
 Build and embed the SPA into a scratch binary without touching a user PATH.
 Seed the database, write scratch config, launch the daemon, read runtime
 metadata, and invoke Playwright with `ROBOREV_E2E_ORIGIN`. Restore the tracked
 asset stub on every exit.
 
-- [ ] **Step 4: Port parity scenarios**
+- [x] **Step 4: Port parity scenarios**
 
 Move reference scenarios and adapt only native-shell selectors and direct
 `/api/*` URLs. Cover table data/pagination/sorting/filters; standalone,
@@ -470,7 +470,7 @@ Add local and fresh-tab bootstrap, header enforcement, CSRF rejection and
 acceptance, disallowed routes, restart login, and actual Markdown/Shiki/Mermaid
 rendering under the shipped CSP.
 
-- [ ] **Step 5: Run and wire the real browser lane**
+- [x] **Step 5: Run and wire the real browser lane**
 
 Run: `bun run --cwd web test:e2e`
 
@@ -479,7 +479,7 @@ Expected: PASS against only the script-created daemon.
 Add the lane to CI after release asset validation. Upload traces only on
 failure.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Commit: `test(web): prove native review parity end to end`
 
@@ -497,7 +497,7 @@ Commit: `test(web): prove native review parity end to end`
 
 - Produces: a review-parity checkpoint ready for projection/package extraction.
 
-- [ ] **Step 1: Update current-state documentation**
+- [x] **Step 1: Update current-state documentation**
 
 Replace foundation-only language with the available native review workflow and
 real-browser command. Do not describe analytics or package extraction as done.
