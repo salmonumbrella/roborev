@@ -30,7 +30,9 @@ func TestSeedCreatesRepresentativeDatabase(t *testing.T) {
 
 	assert.Equal(1, scalarInt(t, db.DB, `
 		SELECT COUNT(*) FROM review_jobs
-		WHERE json_extract(token_usage, '$.has_cost') = 1
+		WHERE status IN ('done', 'failed', 'canceled', 'applied', 'rebased')
+		  AND agent_invoked = 1
+		  AND json_extract(token_usage, '$.has_cost') = 1
 		  AND json_extract(token_usage, '$.cost_usd') > 0`))
 	assert.Equal(1, scalarInt(t, db.DB, `
 		SELECT COUNT(*) FROM review_jobs

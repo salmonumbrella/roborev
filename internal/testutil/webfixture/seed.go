@@ -294,6 +294,9 @@ func fixtureJobs() []fixtureJob {
 		jobs = append(jobs, job)
 	}
 
+	pricedVerdict := true
+	jobs[44].status = storage.JobStatusDone
+	jobs[44].verdict = &pricedVerdict
 	jobs[44].tokenUsage = `{"has_cost":true,"cost_usd":1.25,"input_tokens":1200,"total_output_tokens":400}`
 	jobs[44].invoked = true
 	jobs[45].tokenUsage = `{"has_cost":true,"cost_usd":0,"input_tokens":800,"total_output_tokens":200}`

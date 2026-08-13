@@ -14,6 +14,7 @@
     "format:check": "prettier --check .",
     "check": "bun run generate:check && bun run typecheck && bun run lint && bun run format:check",
     "test": "vitest run",
+    "test:e2e": "bun run scripts/e2e.ts",
     "build": "vite build",
     "assets:check": "bun run scripts/validate-assets.ts dist",
     "assets:embed": "bun run scripts/embed-assets.ts dist",

@@ -94,6 +94,12 @@ jobs:
       - name: Test frontend packages
         run: bun run web:test
 
+      - name: Install browser test runtime
+        run: bunx playwright install --with-deps chromium
+
+      - name: Test embedded browser application
+        run: bun run web:test:e2e
+
       - name: Validate embedded release assets
         run: make web-release-check
 

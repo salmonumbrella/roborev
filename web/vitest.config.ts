@@ -7,6 +7,7 @@ export default defineConfig({
     conditions: ["browser"],
   },
   test: {
+    exclude: ["tests/e2e/**", "node_modules/**"],
     environment: "jsdom",
     environmentOptions: {
       jsdom: { url: "http://127.0.0.1/" },
