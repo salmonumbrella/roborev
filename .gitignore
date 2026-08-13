@@ -3,6 +3,13 @@
 *.exe
 /dist/
 bin/
+/node_modules/
+/web/node_modules/
+/web/dist/
+/web/coverage/
+/web/playwright-report/
+/web/test-results/
+/packages/*/node_modules/
 
 # Generated protobuf (optional - can keep or ignore)
 proto/*.pb.go

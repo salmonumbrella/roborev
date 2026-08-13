@@ -141,6 +141,7 @@ ______________________________________________________________________
 - Create: `web/index.html`
 - Create: `web/src/main.ts`
 - Create: `web/src/App.svelte`
+- Create: `web/src/app.d.ts`
 - Create: `web/src/app.css`
 - Create: `web/src/App.test.ts`
 - Create: `web/src/test/setup.ts`
@@ -218,9 +219,9 @@ Create the root `package.json`:
   "workspaces": ["web", "packages/*"],
   "packageManager": "bun@1.3.14",
   "scripts": {
-    "web:check": "bun --cwd web run check",
-    "web:test": "bun --cwd web run test && bun --cwd packages/roborev-ui run test",
-    "web:build": "bun --cwd web run build"
+    "web:check": "bun run --cwd web check",
+    "web:test": "bun run --cwd web test && bun run --cwd packages/roborev-ui test",
+    "web:build": "bun run --cwd web build"
   }
 }
 ```
@@ -381,7 +382,7 @@ Run:
 
 ```bash
 bun install
-bun --cwd web run format
+bun run --cwd web format
 bun run web:test
 bun run web:check
 bun run web:build
@@ -471,7 +472,7 @@ argument with exit code 2.
 
 Add `generate` and `generate:check` scripts to `web/package.json`, prepend
 `bun run generate:check` to its `check` script, and add
-`"web:generate": "bun --cwd web run generate"` to the root scripts. This keeps
+`"web:generate": "bun run --cwd web generate"` to the root scripts. This keeps
 Task 1 independently green before the generator exists.
 
 - [ ] **Step 4: Generate the committed type artifact**
@@ -480,8 +481,8 @@ Run:
 
 ```bash
 make api-generate
-bun --cwd web run generate
-bun --cwd web run generate:check
+bun run --cwd web generate
+bun run --cwd web generate:check
 ```
 
 Expected: all commands PASS and
@@ -1239,7 +1240,7 @@ Run:
 
 ```bash
 make api-generate
-bun --cwd web run generate
+bun run --cwd web generate
 make api-check
 go test ./internal/daemon -run 'Test(BrowserRoutes|BrowserHandler|HumaOpenAPI)' -count=1
 ```
@@ -1494,9 +1495,9 @@ daemon. Stop it and verify no process or temporary data remains.
 Run:
 
 ```bash
-bun --cwd web run test
-bun --cwd web run check
-bun --cwd web run build
+bun run --cwd web test
+bun run --cwd web check
+bun run --cwd web build
 ```
 
 Expected: PASS.
@@ -1672,7 +1673,7 @@ before:
 Because the hook restores the stub after its verification binary exits, add a
 second `make web-embed` hook immediately before GoReleaser builds. Add a final
 workflow cleanup step with `if: always()` that runs
-`bun --cwd web run assets:restore`. Verify the built release binary through a
+`bun run --cwd web assets:restore`. Verify the built release binary through a
 hidden `verify-web-assets` Cobra command that calls
 `web.ValidateEmbeddedRelease`; the command is unavailable from normal help.
 
