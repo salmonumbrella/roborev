@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
+  authenticatedFetch,
   bootstrapSession,
   clearTabSession,
   login,
@@ -115,5 +116,44 @@ describe("browser session client", () => {
 
     expect(sessionStorage.length).toBe(0);
     expect(window.localStorage.getItem("unrelated")).toBe("kept");
+  });
+
+  test("adds tab credentials to reads and CSRF credentials to mutations", async () => {
+    sessionStorage.setItem("roborev.web.session", "tab");
+    sessionStorage.setItem("roborev.web.csrf", "csrf");
+    const inner = vi.fn(async (input: RequestInfo | URL) => {
+      void input;
+      return response(204);
+    });
+    const request = authenticatedFetch(inner);
+
+    await request("/api/status", { headers: { Accept: "application/json" } });
+    await request("/api/review/close", {
+      method: "POST",
+      body: JSON.stringify({ job_id: 7, closed: true }),
+      signal: AbortSignal.timeout(1_000),
+    });
+
+    const read = inner.mock.calls[0]![0] as unknown as Request;
+    const mutation = inner.mock.calls[1]![0] as unknown as Request;
+    expect(read.credentials).toBe("same-origin");
+    expect(read.headers.get("Accept")).toBe("application/json");
+    expect(read.headers.get("X-Roborev-Web-Session")).toBe("tab");
+    expect(read.headers.has("X-Roborev-CSRF")).toBe(false);
+    expect(mutation.credentials).toBe("same-origin");
+    expect(mutation.headers.get("X-Roborev-Web-Session")).toBe("tab");
+    expect(mutation.headers.get("X-Roborev-CSRF")).toBe("csrf");
+    expect(mutation.headers.get("Content-Type")).toBe("application/json");
+    expect(mutation.signal.aborted).toBe(false);
+  });
+
+  test("clears rejected tab credentials after an authenticated request", async () => {
+    sessionStorage.setItem("roborev.web.session", "stale");
+    sessionStorage.setItem("roborev.web.csrf", "stale");
+    const request = authenticatedFetch(vi.fn(async () => response(401)));
+
+    await request("/api/status");
+
+    expect(sessionStorage.length).toBe(0);
   });
 });

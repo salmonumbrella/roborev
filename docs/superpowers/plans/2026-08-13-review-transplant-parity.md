@@ -143,21 +143,21 @@ Commit: `build(web): add review application dependencies`
 - Produces: `makeAppRuntime(): OwnedAppRuntime` containing only Clipboard,
     streaming fetch, and Roborev workflow services.
 
-- [ ] **Step 1: Write failing transport tests**
+- [x] **Step 1: Write failing transport tests**
 
 Prove the wrapper adds the tab header to reads, adds the tab and CSRF headers to
 mutations, uses same-origin credentials, preserves caller headers and abort
 signals, defaults JSON content type only for JSON-shaped mutations, and clears
 tab credentials after a 401.
 
-- [ ] **Step 2: Verify the tests fail**
+- [x] **Step 2: Verify the tests fail**
 
 Run:
 `bun x vitest run web/src/lib/api/session.test.ts web/src/lib/api/client.test.ts`
 
 Expected: FAIL because the authenticated transport and client do not exist.
 
-- [ ] **Step 3: Move and adapt the transport**
+- [x] **Step 3: Move and adapt the transport**
 
 Move the NDJSON parser, body release, stream decoding, reconnect errors, retry
 schedule, ordered queue, latest-command coordinator, and runtime boundary
@@ -165,7 +165,7 @@ without algorithm changes. Use `/` as the client base. Build stream URLs as
 `/api/stream/events` and `/api/job/output?job_id=<id>&stream=1`.
 `authenticatedFetch` reads session storage at request time.
 
-- [ ] **Step 4: Verify runtime behavior**
+- [x] **Step 4: Verify runtime behavior**
 
 Test typed failures, interruption-only exits, disposal, malformed NDJSON,
 skippable output records, and abort propagation.
@@ -175,7 +175,7 @@ Run:
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `feat(web): add the native review runtime`
 

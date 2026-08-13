@@ -4,7 +4,7 @@ const csrfKey = "roborev.web.csrf";
 const sessionHeader = "X-Roborev-Web-Session";
 const csrfHeader = "X-Roborev-CSRF";
 
-type Fetch = (
+export type Fetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>;
@@ -32,6 +32,60 @@ export function sessionHeaders(): Record<string, string> {
     return {};
   }
   return { [sessionHeader]: session, [csrfHeader]: csrf };
+}
+
+export function authenticatedFetch(
+  fetchImpl: Fetch = globalThis.fetch.bind(globalThis),
+): Fetch {
+  return async (input, init) => {
+    const request = new Request(
+      new URL(
+        input instanceof Request ? input.url : input,
+        globalThis.location.origin,
+      ),
+      {
+        ...(input instanceof Request
+          ? {
+              method: input.method,
+              headers: input.headers,
+              body:
+                input.method === "GET" || input.method === "HEAD"
+                  ? undefined
+                  : input.body,
+              signal: input.signal,
+            }
+          : {}),
+        ...init,
+        credentials: "same-origin",
+      },
+    );
+    const headers = new Headers(request.headers);
+    const session = sessionStorage.getItem(sessionKey);
+    if (session !== null) {
+      headers.set(sessionHeader, session);
+    }
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      const csrf = sessionStorage.getItem(csrfKey);
+      if (csrf !== null) {
+        headers.set(csrfHeader, csrf);
+      }
+      const explicitHeaders = new Headers(
+        init?.headers ?? (input instanceof Request ? input.headers : undefined),
+      );
+      if (
+        typeof init?.body === "string" &&
+        !explicitHeaders.has("Content-Type")
+      ) {
+        headers.set("Content-Type", "application/json");
+      }
+    }
+
+    const response = await fetchImpl(new Request(request, { headers }));
+    if (response.status === 401) {
+      clearTabSession();
+    }
+    return response;
+  };
 }
 
 export async function bootstrapSession(
