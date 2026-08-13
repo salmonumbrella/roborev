@@ -5,6 +5,7 @@
   "scripts": {
     "web:check": "bun run --cwd web check",
     "web:test": "bun run --cwd web test && bun run --cwd packages/roborev-ui test",
-    "web:build": "bun run --cwd web build"
+    "web:build": "bun run --cwd web build",
+    "web:generate": "bun run --cwd web generate"
   }
 }
