@@ -155,6 +155,93 @@ test.describe.serial("native review workspace", () => {
     expect(request.headers()["x-roborev-web-session"]).toBeTruthy();
   });
 
+  test("reconnects the event stream after a transport failure", async ({
+    page,
+  }) => {
+    let attempts = 0;
+    await page.route("**/api/stream/events", async (route) => {
+      attempts += 1;
+      if (attempts === 1) {
+        await route.abort("connectionfailed");
+        return;
+      }
+      await route.continue();
+    });
+
+    await openReviews(page);
+    await expect.poll(() => attempts).toBeGreaterThanOrEqual(2);
+  });
+
+  test("recovers the workspace when daemon health returns", async ({
+    page,
+  }) => {
+    await openReviews(page);
+    let unavailable = true;
+    await page.route("**/api/status", async (route) => {
+      if (unavailable) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "temporarily unavailable" }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.reload();
+    await expect(
+      page.getByText("Roborev daemon not reachable", { exact: true }),
+    ).toBeVisible();
+    unavailable = false;
+    await page.getByRole("button", { name: "Retry" }).click();
+    await expect(
+      page.getByRole("region", { name: "Review jobs" }),
+    ).toBeVisible();
+    await expect(page.locator(".job-row").first()).toBeVisible();
+  });
+
+  test("keeps the prior listing visible when a filtered refresh fails", async ({
+    page,
+  }) => {
+    await openReviews(page);
+    await expect(jobRow(page, 52)).toBeVisible();
+    await page.route("**/api/jobs?**", (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "temporarily unavailable" }),
+      }),
+    );
+
+    await selectStatus(page, "Failed");
+    await expect(page.locator(".error-bar")).toContainText(
+      "Failed to load jobs",
+    );
+    await expect(jobRow(page, 52)).toBeVisible();
+
+    await page.unroute("**/api/jobs?**");
+    await selectStatus(page, "All statuses");
+    await expect(page.locator(".error-bar")).toHaveCount(0);
+    await expect(jobRow(page, 52)).toBeVisible();
+  });
+
+  test("retries a failed fetch-based job output stream", async ({ page }) => {
+    let attempts = 0;
+    await page.route("**/api/job/output?**", async (route) => {
+      attempts += 1;
+      if (attempts === 1) {
+        await route.abort("connectionfailed");
+        return;
+      }
+      await route.continue();
+    });
+
+    await openReview(page, 50);
+    await page.getByRole("button", { name: "Log", exact: true }).click();
+    await expect.poll(() => attempts).toBeGreaterThanOrEqual(2);
+  });
+
   test("keeps the review table horizontally reachable in a narrow viewport", async ({
     page,
   }) => {

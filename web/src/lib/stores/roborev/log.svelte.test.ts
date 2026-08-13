@@ -132,6 +132,29 @@ describe("createLogStore", () => {
     ]);
   });
 
+  it("reconnects a live output stream after a transient transport failure", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("connection reset"))
+      .mockResolvedValueOnce(
+        ndjsonResponse([
+          {
+            ts: "2026-04-11T11:00:03Z",
+            text: "reconnected output",
+            line_type: "text",
+          },
+        ]),
+      );
+    const store = createLogStore({ baseUrl: "http://roborev.test" });
+
+    await runLogEffect(store.startStreamingEffect(79, "reconnect-test"));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(store.getLines().map((line) => line.text)).toEqual([
+      "reconnected output",
+    ]);
+  });
+
   it("skips malformed log records without failing later valid output", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(

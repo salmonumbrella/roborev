@@ -1,6 +1,11 @@
 import { Effect, Stream } from "effect";
 import type { AppRuntime } from "../../runtime/runtime";
-import { loadRoborevJobOutput, roborevJobOutputStream } from "../../api/client";
+import {
+  loadRoborevJobOutput,
+  roborevJobOutputStream,
+  RoborevStreamError,
+} from "../../api/client";
+import { reconnectSchedule } from "../../api/retry-policy";
 import type { RoborevLogLinePayload } from "../../api/schemas";
 import { makeRoborevOwner, RoborevWorkflow } from "./workflow";
 
@@ -60,6 +65,11 @@ export function createLogStore(opts: LogStoreOptions) {
               lines = [...lines, logLineFromPayload(payload)];
             }),
         ).pipe(
+          Effect.retry({
+            schedule: reconnectSchedule,
+            while: (failure) =>
+              failure instanceof RoborevStreamError && failure.retryable,
+          }),
           Effect.catch((failure) =>
             Effect.sync(() => {
               if (activeLogOwner !== logOwner) return;
