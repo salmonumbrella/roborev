@@ -502,7 +502,7 @@ Commit: `test(web): prove native review parity end to end`
 Replace foundation-only language with the available native review workflow and
 real-browser command. Do not describe analytics or package extraction as done.
 
-- [ ] **Step 2: Run every gate**
+- [x] **Step 2: Run every gate**
 
 Run:
 
