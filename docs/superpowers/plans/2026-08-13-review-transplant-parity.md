@@ -522,7 +522,7 @@ git diff --check
 
 Expected: PASS with the compilation stub restored.
 
-- [ ] **Step 3: Scrub and publish the checkpoint**
+- [x] **Step 3: Scrub and publish the checkpoint**
 
 Scan every unpushed commit, current diff, fixture, test, trace, screenshot, and
 pull-request update against the canonical private-term denylist and structural
