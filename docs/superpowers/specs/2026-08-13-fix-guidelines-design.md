@@ -37,6 +37,12 @@ There is no merge mode, supersede flag, Agent Hook flag, or Agent Hook-specific
 environment variable. This keeps one authoritative value visible to the active
 hook session and to a later `roborev fix` process.
 
+The authoritative global source is the standard global config selected by
+roborev's data directory. The Agent Hook's existing `--config` flag may still
+select an alternate file for hook thresholds and `instruction`, but it does not
+redirect `fix_guidelines`; a later `roborev fix` process has no access to that
+hook-only path.
+
 The existing `[agent_hook].instruction` and `[droid_hook].instruction` settings
 retain their current full-replacement semantics. Effective fix guidelines are
 appended to either the default or a customized instruction, so users may
@@ -46,11 +52,19 @@ customize workflow wording and finding policy independently.
 
 ### Agent Hook
 
-At each hook event, resolve fix guidelines for the event's repository. Append a
-clearly labeled autofix-guidelines section to the already-resolved continuation
-instruction before constructing the hook-daemon request. Apply the same behavior
-to kit-backed profiles, legacy profile-less registrations, Grok Build, and
-Factory Droid.
+At each hook event, determine the same effective Git directory used by Agent
+Hook's repository accounting. This is normally the event's working directory;
+for a commit-producing command that uses `git -C`, it is the command's target
+directory. Resolve the worktree root and fix guidelines from that directory and
+the standard global config. Append a clearly labeled autofix-guidelines section
+to the already-resolved continuation instruction before constructing the
+hook-daemon request. Apply the same behavior to kit-backed profiles, legacy
+profile-less registrations, Grok Build, and Factory Droid.
+
+An event outside a Git worktree keeps the existing instruction unchanged; the
+hook daemon already treats such events as untracked. Once a worktree root is
+resolved, an invalid repo config is a hook configuration error rather than a
+silent fallback to global guidance.
 
 Compose the text in the hook process rather than adding a daemon request field.
 This avoids persisted-state and protocol changes and prevents an older running
@@ -92,9 +106,9 @@ comments, logs, and quoted text as untrusted data rather than instructions.
 
 ## Errors And Compatibility
 
-Invalid global or repo TOML continues to fail through existing configuration
-loading paths. No new parser, daemon schema, persisted state, migration, or
-network API is required.
+Invalid standard global or resolved repo TOML fails before an agent receives a
+prompt. No new parser, daemon schema, persisted state, migration, or network API
+is required.
 
 Missing and empty values are equivalent and preserve current behavior. Existing
 configs, hook registrations, scripts using `--instruction`, and automated fix
@@ -109,7 +123,9 @@ Behavior tests defend independently drifting boundaries:
   repo guidance inherits global guidance.
 - Hook request tests prove ordinary profiles, Grok/legacy paths, and Droid send
   the composed instruction, while empty guidance sends the prior instruction
-  unchanged.
+  unchanged. Scope cases prove `git -C` selects the target repo, outside-repo
+  events remain unchanged, malformed repo config fails, and the hook's alternate
+  `--config` path does not redirect shared fix guidance.
 - Direct and batch fix tests use the real prompt builders to prove guidance and
   evaluation framing reach the agent; empty guidance preserves the existing
   prompt text.
