@@ -20,6 +20,47 @@ if (typeof window !== "undefined") {
     configurable: true,
     value: window.sessionStorage,
   });
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string): MediaQueryList => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+class TestResizeObserver implements ResizeObserver {
+  disconnect(): void {}
+  observe(): void {}
+  unobserve(): void {}
+}
+
+Object.defineProperty(globalThis, "ResizeObserver", {
+  configurable: true,
+  value: TestResizeObserver,
+});
+
+if (typeof Element !== "undefined") {
+  Object.defineProperty(Element.prototype, "scrollIntoView", {
+    configurable: true,
+    value: () => {},
+  });
+}
+
+if (typeof navigator !== "undefined") {
+  Object.defineProperty(globalThis.navigator, "clipboard", {
+    configurable: true,
+    value: {
+      readText: async () => "",
+      writeText: async () => {},
+    },
+  });
 }
 
 afterEach(() => cleanup());

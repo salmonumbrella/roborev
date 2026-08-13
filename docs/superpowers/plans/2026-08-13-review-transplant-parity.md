@@ -59,19 +59,19 @@ DOMPurify 3.4.13, Shiki 4.3.0, Mermaid 11.16.1, Vitest 4.1.10, Playwright
 - Produces: source-resolved kit-ui, Effect, Markdown, highlighting, diagrams,
     and icon dependencies.
 
-- [ ] **Step 1: Write the failing dependency contract**
+- [x] **Step 1: Write the failing dependency contract**
 
 Create a test that imports `Clipboard`, `Button`, `EmptyState`, `Modal`,
 one Lucide icon, DOMPurify, Effect, Marked, Mermaid, and
 `getSingletonHighlighter`, then asserts each public entry point exists.
 
-- [ ] **Step 2: Verify the dependency contract fails**
+- [x] **Step 2: Verify the dependency contract fails**
 
 Run: `bun x vitest run web/src/transplant-contract.test.ts`
 
 Expected: FAIL because the review dependencies are not installed.
 
-- [ ] **Step 3: Add exact reference-compatible dependencies**
+- [x] **Step 3: Add exact reference-compatible dependencies**
 
 Add these runtime dependencies:
 
@@ -93,12 +93,12 @@ Add `@effect/vitest` 4.0.0-beta.102, `@playwright/test` 1.61.1, and
 repository root. Import kit-ui theme and Mermaid CSS before app styles and
 exclude the source-shipping kit package from Vite dependency optimization.
 
-- [ ] **Step 4: Complete the test environment**
+- [x] **Step 4: Complete the test environment**
 
 Add deterministic `ResizeObserver`, `scrollIntoView`, `matchMedia`,
 clipboard, and crypto shims used by moved tests. Keep origin-scoped storage.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 

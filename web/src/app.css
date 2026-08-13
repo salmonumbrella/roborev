@@ -1,3 +1,6 @@
+@import "@kenn-io/kit-ui/theme.css";
+@import "@kenn-io/kit-ui/mermaid.css";
+
 :root {
   color-scheme: dark;
   font-family:
