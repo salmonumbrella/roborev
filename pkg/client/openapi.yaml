@@ -2446,6 +2446,79 @@ components:
         - pass_rate
         - resolution_rate
       type: object
+    WebBootstrapInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/WebBootstrapInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+      type: object
+    WebLoginRequest:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/WebLoginRequest.json
+          format: uri
+          readOnly: true
+          type: string
+        token:
+          minLength: 1
+          type: string
+      required:
+        - token
+      type: object
+    WebSessionCredentials:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/WebSessionCredentials.json
+          format: uri
+          readOnly: true
+          type: string
+        csrf:
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        session:
+          type: string
+      required:
+        - session
+        - csrf
+        - expires_at
+      type: object
+    WebSessionStatus:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/WebSessionStatus.json
+          format: uri
+          readOnly: true
+          type: string
+        authenticated:
+          type: boolean
+        authentication:
+          enum:
+            - local
+            - token
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+      required:
+        - authentication
+        - authenticated
+      type: object
 info:
   title: roborev
   version: dev
@@ -3814,3 +3887,86 @@ paths:
       summary: Backfill token usage from AgentsView payloads
       tags:
         - jobs
+  /api/ui/session:
+    delete:
+      operationId: logout-web-session
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Invalidate a browser session
+      tags:
+        - web-session
+    get:
+      operationId: get-web-session-status
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebSessionStatus"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get browser authentication status
+      tags:
+        - web-session
+  /api/ui/session/bootstrap:
+    post:
+      operationId: bootstrap-web-session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebBootstrapInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebSessionCredentials"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Mint tab credentials from an ambient browser session
+      tags:
+        - web-session
+  /api/ui/session/login:
+    post:
+      operationId: login-web-session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebLoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebSessionCredentials"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Exchange a daemon token for a browser session
+      tags:
+        - web-session

@@ -241,6 +241,20 @@ type BackfillTokensErrorResponse = ErrorResponse
 
 type BackfillTokensErrorResponseJSON = ErrorResponse
 
+type LogoutWebSessionErrorResponse = ErrorModel
+
+type GetWebSessionStatusResponse = WebSessionStatus
+
+type GetWebSessionStatusErrorResponse = ErrorModel
+
+type BootstrapWebSessionResponse = WebSessionCredentials
+
+type BootstrapWebSessionErrorResponse = ErrorModel
+
+type LoginWebSessionResponse = WebSessionCredentials
+
+type LoginWebSessionErrorResponse = ErrorModel
+
 type ListActivityResp struct {
 	HTTPResponse *http.Response
 	Body         []byte
@@ -514,4 +528,31 @@ type BackfillTokensResp struct {
 	JSON200      *BackfillTokensResponse
 	JSON400      *BackfillTokensErrorResponse
 	JSON500      *BackfillTokensErrorResponseJSON
+}
+
+type LogoutWebSessionResp struct {
+	HTTPResponse *http.Response
+	Body         []byte
+	StatusCode   int
+}
+
+type GetWebSessionStatusResp struct {
+	HTTPResponse *http.Response
+	Body         []byte
+	StatusCode   int
+	JSON200      *GetWebSessionStatusResponse
+}
+
+type BootstrapWebSessionResp struct {
+	HTTPResponse *http.Response
+	Body         []byte
+	StatusCode   int
+	JSON200      *BootstrapWebSessionResponse
+}
+
+type LoginWebSessionResp struct {
+	HTTPResponse *http.Response
+	Body         []byte
+	StatusCode   int
+	JSON200      *LoginWebSessionResponse
 }

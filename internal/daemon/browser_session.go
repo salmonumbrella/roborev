@@ -178,6 +178,20 @@ func (m *BrowserSessionManager) Authenticate(ambient, tab string) (BrowserPrinci
 	return session.principal, nil
 }
 
+func (m *BrowserSessionManager) SessionExpiry(ambient, tab string) (time.Time, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.cleanupLocked()
+	ambientID := sha256.Sum256([]byte(ambient))
+	tabID := sha256.Sum256([]byte(tab))
+	session, ambientFound := m.ambient[ambientID]
+	tabRecord, tabFound := m.tabs[tabID]
+	if !ambientFound || !tabFound || subtle.ConstantTimeCompare(ambientID[:], tabRecord.ambientID[:]) != 1 {
+		return time.Time{}, ErrWebSessionRequired
+	}
+	return session.expiresAt, nil
+}
+
 func (m *BrowserSessionManager) CheckCSRF(tab, csrf string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

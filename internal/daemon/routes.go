@@ -399,6 +399,7 @@ func (s *Server) registerHumaAPI(mux *http.ServeMux) huma.API {
 func OpenAPISpec() ([]byte, error) {
 	mux := http.NewServeMux()
 	api := (&Server{}).registerHumaAPI(mux)
+	(&Server{}).registerBrowserRoutes(api)
 	return json.MarshalIndent(api.OpenAPI(), "", "  ")
 }
 
@@ -407,6 +408,7 @@ func OpenAPISpec() ([]byte, error) {
 func OpenAPISpecYAML() ([]byte, error) {
 	mux := http.NewServeMux()
 	api := (&Server{}).registerHumaAPI(mux)
+	(&Server{}).registerBrowserRoutes(api)
 	return api.OpenAPI().YAML()
 }
 
@@ -415,6 +417,7 @@ func OpenAPISpecYAML() ([]byte, error) {
 func OpenAPISpec30() ([]byte, error) {
 	mux := http.NewServeMux()
 	api := (&Server{}).registerHumaAPI(mux)
+	(&Server{}).registerBrowserRoutes(api)
 	spec, err := api.OpenAPI().Downgrade()
 	if err != nil {
 		return nil, err
@@ -430,6 +433,7 @@ func OpenAPISpec30() ([]byte, error) {
 func OpenAPISpec30YAML() ([]byte, error) {
 	mux := http.NewServeMux()
 	api := (&Server{}).registerHumaAPI(mux)
+	(&Server{}).registerBrowserRoutes(api)
 	return api.OpenAPI().DowngradeYAML()
 }
 

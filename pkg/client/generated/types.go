@@ -1751,3 +1751,51 @@ type VerdictStats struct {
 	ResolutionRate float64 `json:"resolution_rate"`
 	Total          int64   `json:"total"`
 }
+
+type WebBootstrapInputBody struct {
+	// Schema A URL to the JSON Schema for this object.
+	Schema *string `json:"$schema,omitempty"`
+}
+
+type WebLoginRequest struct {
+	// Schema A URL to the JSON Schema for this object.
+	Schema *string `json:"$schema,omitempty"`
+	Token  string  `json:"token" validate:"required,min=1"`
+}
+
+func (w WebLoginRequest) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(w))
+}
+
+type WebSessionCredentials struct {
+	// Schema A URL to the JSON Schema for this object.
+	Schema    *string   `json:"$schema,omitempty"`
+	Csrf      string    `json:"csrf" validate:"required"`
+	ExpiresAt time.Time `json:"expires_at" validate:"required"`
+	Session   string    `json:"session" validate:"required"`
+}
+
+func (w WebSessionCredentials) Validate() error {
+	return runtime.ConvertValidatorError(typesValidator.Struct(w))
+}
+
+type WebSessionStatus struct {
+	// Schema A URL to the JSON Schema for this object.
+	Schema         *string                        `json:"$schema,omitempty"`
+	Authenticated  bool                           `json:"authenticated"`
+	Authentication WebSessionStatusAuthentication `json:"authentication" validate:"required"`
+	ExpiresAt      *time.Time                     `json:"expires_at,omitempty"`
+}
+
+func (w WebSessionStatus) Validate() error {
+	var errors runtime.ValidationErrors
+	if v, ok := any(w.Authentication).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			errors = errors.Append("Authentication", err)
+		}
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
+}
