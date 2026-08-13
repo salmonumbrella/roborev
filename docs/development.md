@@ -20,8 +20,11 @@ only).
 ```
 roborev/
 ├── cmd/roborev/         # CLI entry point
+├── web/                  # Native Svelte browser application
+├── packages/             # Source-shipping browser component packages
 ├── internal/
 │   ├── daemon/          # HTTP API server and worker pool
+│   ├── web/             # Embedded, validated browser distribution
 │   ├── storage/         # SQLite operations
 │   ├── agent/           # Agent interface and implementations
 │   └── config/          # Configuration loading
@@ -148,6 +151,31 @@ writes the normal daemon database or review state.
 go build ./...             # Build all
 make install               # Install with version info
 ```
+
+### Browser application
+
+The browser workspace uses Bun 1.3.14. Install the pinned dependency graph and
+run its complete checks from the repository root:
+
+```bash
+bun install --frozen-lockfile
+bun run web:check
+bun run web:test
+make api-check
+make web-release-check
+```
+
+`make api-check` verifies that browser types match the canonical OpenAPI
+document. `make web-release-check` builds the SPA, validates its Vite manifest,
+temporarily stages it for Go embedding, tests the embedded release, and always
+restores the tracked compilation stub.
+
+Use `make web-dev` for full-stack development. It starts Vite and a branch-built
+daemon with a disposable data directory, SQLite database, and configuration; it
+never connects to the normal Roborev daemon or data directory. The runner
+allocates a Vite port first and supplies that exact loopback origin to the
+disposable daemon. There is no automatic development-origin relaxation. Stop the
+command to terminate both processes and remove the temporary data.
 
 ## Documentation
 

@@ -9,6 +9,11 @@ All notable changes to roborev, grouped by minor release.
 
 **New features**
 
+- Roborev now embeds an authenticated native browser application on a separate
+    daemon listener. `roborev ui [job-id]` opens the runtime-advertised origin,
+    with loopback bootstrap for local use and token exchange for remote HTTPS
+    deployments. Browser sessions and release assets are validated without
+    exposing the private CLI listener.
 - Pi agents accept global `[agent.pi] launch_args`, passed as tokenized
     arguments to every Pi invocation before roborev-managed workflow and safety
     options. This allows isolated classifier jobs to load extension-defined
@@ -608,7 +613,7 @@ ______________________________________________________________________
 - Binary overrides for agent hooks. `roborev agent-hook install --binary <path>`
     bakes a stable roborev shim or explicit binary path into Codex and Claude
     Code hook configs, mirroring the git-hook `roborev init --binary` workflow.
-    See [Agent Hook Quick Start](/agent-hook/#quick-start).
+    See [Agent Hook installation](/agent-hook/#install).
 
 **Improvements**
 

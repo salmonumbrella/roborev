@@ -25,6 +25,8 @@ roborev tui                      # Interactive terminal UI
                                  # --branch: pre-filter to branch
                                  # --no-quit: suppress keyboard quit
                                  # --control-socket: custom socket path
+roborev ui                       # Open the native browser application
+roborev ui 42                    # Open browser review detail for local job 42
 roborev version                  # Show version
 roborev version --json           # Show stable machine-readable version data
 ```
@@ -131,8 +133,10 @@ roborev show --prompt <job_id>   # Show the prompt sent to the agent
 roborev list                     # List jobs for current repo/branch
 roborev list --open              # List only open reviews
 roborev list --closed            # List only closed reviews
-roborev tui                      # Interactive browser
+roborev tui                      # Interactive terminal UI
 roborev tui --repo --branch      # Pre-filtered to current repo+branch
+roborev ui                       # Open the browser review workspace
+roborev ui 42                    # Deep-link to browser review detail
 roborev log <job_id>             # View job log
 ```
 
@@ -148,6 +152,12 @@ completes.
 
 `roborev show` displays review comments after the review output when comments
 exist, matching the layout in the TUI review detail view.
+
+`roborev ui` starts the daemon when needed, reads the browser origin from the
+live daemon runtime, and opens `/reviews`. An optional positive numeric job ID
+opens `/reviews/<job-id>`. Job IDs are local to that daemon's SQLite database,
+so a numeric deep link is not portable to another machine even when review data
+is synchronized. Authentication tokens are never placed in the launch URL.
 
 For panel parent reviews, `roborev show` also displays a one-line reviewer
 summary. `roborev show --json` includes an additive `panel` object with the run
