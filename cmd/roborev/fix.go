@@ -1586,9 +1586,9 @@ type batchSplitOptions struct {
 func splitIntoBatches(
 	entries []batchEntry, opts batchSplitOptions,
 ) [][]batchEntry {
-	overhead := batchPromptOverhead(opts.Metadata, opts.FixGuidelines) +
-		len(config.SeverityInstruction(opts.MinSeverity))
-	if strings.TrimSpace(opts.FixGuidelines) != "" && config.SeverityInstruction(opts.MinSeverity) != "" {
+	severityInstruction := config.SeverityInstruction(opts.MinSeverity)
+	overhead := batchPromptOverhead(opts.Metadata, opts.FixGuidelines) + len(severityInstruction)
+	if strings.TrimSpace(opts.FixGuidelines) != "" && severityInstruction != "" {
 		overhead++
 	}
 	var batches [][]batchEntry
