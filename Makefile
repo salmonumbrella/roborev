@@ -25,7 +25,7 @@ GOLANGCI_LINT_VERSION := 2.12.2
 # (golangci-lint #3502). A per-checkout cache dies with its checkout.
 export GOLANGCI_LINT_CACHE := $(CURDIR)/.golangci-lint-cache
 
-.PHONY: build web-build web-assets-check web-embed web-restore web-release-check install clean test test-git-isolation test-codex-skill-eval test-integration test-acp-integration test-acp-integration-codex test-acp-integration-claude test-postgres test-all postgres-up postgres-down test-postgres-ci api-generate api-check lint lint-ci markdown markdown-ci check-golangci-lint print-golangci-lint-version check-actions check-renovate-config install-hooks docs-install docs-build docs-serve docs-check docs-screenshots docs-assets-branch docs-generated-assets-branch docs-deploy-staging docs-deploy
+.PHONY: build web-build web-dev web-assets-check web-embed web-restore web-release-check install clean test test-git-isolation test-codex-skill-eval test-integration test-acp-integration test-acp-integration-codex test-acp-integration-claude test-postgres test-all postgres-up postgres-down test-postgres-ci api-generate api-check lint lint-ci markdown markdown-ci check-golangci-lint print-golangci-lint-version check-actions check-renovate-config install-hooks docs-install docs-build docs-serve docs-check docs-screenshots docs-assets-branch docs-generated-assets-branch docs-deploy-staging docs-deploy
 
 build: web-embed
 	@set -e; trap '$(MAKE) web-restore' EXIT; \
@@ -34,6 +34,9 @@ build: web-embed
 
 web-build:
 	cd web && bun run build
+
+web-dev:
+	cd web && bun run dev:full
 
 web-assets-check: web-build
 	cd web && bun run assets:check

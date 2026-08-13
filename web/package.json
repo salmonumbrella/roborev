@@ -18,6 +18,7 @@
     "assets:check": "bun run scripts/validate-assets.ts dist",
     "assets:embed": "bun run scripts/embed-assets.ts dist",
     "assets:restore": "bun run scripts/embed-assets.ts --restore-stub",
+    "dev:full": "bun run scripts/dev.ts",
     "dev": "vite"
   },
   "dependencies": {
