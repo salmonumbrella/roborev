@@ -23,13 +23,18 @@ All notable changes to roborev, grouped by minor release.
     repeated web, TUI and CLI opens on the same day count once. Commands the
     bundled agent skills run carry `--from-skill` so they are not counted. See
     [Telemetry](/docs/configuration/#telemetry).
+- Plan fixes before implementation with `roborev fix --plan` or
+    `roborev refine --plan`. Use `--plan-only` to print and store plans without
+    editing code. Background fix requests and the TUI fix panel can also plan
+    before implementation.
 
 **Improvements**
 
-- Navigate the TUI with `u`/`d` to page up/down, `g`/`G` to jump to the
-    top/bottom, and `Ctrl-P`/`Ctrl-N` to move up/down. The release-notes
-    shortcut moves from `u` to uppercase `U`. See
-    [TUI keyboard commands](/docs/integrations/tui/#keyboard-commands).
+- Simplify TUI navigation: use `PgUp`/`PgDn` to page through content and `u` to
+    open release notes. The `u`/`d` paging and `Ctrl-P`/`Ctrl-N` movement
+    aliases are removed. Main views retain `Home`/`g` top jumps; `gg` and
+    `End`/`G` aliases are removed. In the log view, `g`/`G` toggles between the
+    top and bottom.
 - Set `synthesis_reasoning` on a review panel to choose the reasoning level for
     its synthesis step without changing `fix_reasoning`. See
     [panel configuration](/docs/advanced/subagent-review-panels/#panels).

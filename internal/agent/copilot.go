@@ -175,12 +175,21 @@ func (a *CopilotAgent) CommandName() string {
 
 func (a *CopilotAgent) CommandLine() string {
 	agenticMode := a.Agentic || AllowUnsafeAgents()
+	return a.commandLine(agenticMode)
+}
+
+// PlanningCommandLine returns Copilot's representative read-only planning command.
+func (a *CopilotAgent) PlanningCommandLine() string {
+	return a.Command + " " + strings.Join(a.buildArgs(false), " ")
+}
+
+func (a *CopilotAgent) commandLine(agenticMode bool) string {
 	args := a.commandArgs(agenticMode, false, false, false, false)
 	return a.Command + " " + strings.Join(args, " ")
 }
 
 func (a *CopilotAgent) Review(ctx context.Context, repoPath, commitSHA, prompt string, output io.Writer) (string, error) {
-	agenticMode := a.Agentic || AllowUnsafeAgents()
+	agenticMode := effectiveAgentic(ctx, a.Agentic)
 
 	supportsAllowAllTools, err := copilotSupportsAllowAllTools(ctx, a.Command)
 	if err != nil {
