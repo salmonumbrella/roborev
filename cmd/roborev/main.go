@@ -29,6 +29,9 @@ func main() {
 			if err := validateServerFlag(); err != nil {
 				return err
 			}
+			if err := validateRemoteCommandFor(cmd); err != nil {
+				return err
+			}
 			// Past this point cobra has validated everything it can, so
 			// errors from RunE just get a plain "Error: ..." line without
 			// the usage wall.
@@ -37,9 +40,10 @@ func main() {
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&serverAddr, "server", "", "daemon server address (e.g. 127.0.0.1:7373 or unix://)")
+	rootCmd.PersistentFlags().StringVar(&serverAddr, "server", "", "daemon address (loopback, unix://, or explicit remote HTTPS base URL)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
+	rootCmd.AddCommand(signingInitCmd())
 	rootCmd.AddCommand(initCmd())
 	rootCmd.AddCommand(quickstartCmd())
 	rootCmd.AddCommand(reviewCmd())

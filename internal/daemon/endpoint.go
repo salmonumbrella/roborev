@@ -10,6 +10,8 @@ import (
 	kitdaemon "go.kenn.io/kit/daemon"
 
 	"go.kenn.io/roborev/internal/auth"
+	"go.kenn.io/roborev/internal/config"
+	"go.kenn.io/roborev/internal/requestsigning"
 	roborevclient "go.kenn.io/roborev/pkg/client"
 )
 
@@ -19,6 +21,7 @@ var MaxUnixPathLen = kitdaemon.MaxUnixPathLen
 // DaemonEndpoint encapsulates the transport type and address for the daemon.
 type DaemonEndpoint struct {
 	Network   string // "tcp" or "unix"
+	remoteURL string // Explicit HTTPS URL; never used for local discovery.
 	accessErr error  // A terminal discovery error; never persisted.
 	Address   string // "127.0.0.1:7373" or "/tmp/roborev-1000/daemon.sock"
 }
@@ -33,6 +36,18 @@ func daemonEndpointFromKit(ep kitdaemon.Endpoint) DaemonEndpoint {
 
 // ParseEndpoint parses a server_addr config value into a DaemonEndpoint.
 func ParseEndpoint(serverAddr string) (DaemonEndpoint, error) {
+	if strings.HasPrefix(serverAddr, "https://") {
+		cfg, err := config.LoadRemoteClient()
+		if err != nil {
+			return DaemonEndpoint{}, err
+		}
+		// An exact explicit credential binding selects remote trust. All other
+		// endpoints retain the existing local transport/runtime policy.
+		if cfg.MatchOrigin(serverAddr) == nil {
+			u, _ := requestsigning.ValidateBase(serverAddr)
+			return DaemonEndpoint{Network: "https", Address: u.Host, remoteURL: u.String()}, nil
+		}
+	}
 	raw := serverAddr
 	if raw == "" {
 		raw = "127.0.0.1:7373"
@@ -67,11 +82,17 @@ func (e DaemonEndpoint) IsUnix() bool {
 
 // BaseURL returns the HTTP base URL for constructing API requests.
 func (e DaemonEndpoint) BaseURL() string {
+	if e.IsRemote() {
+		return e.remoteURL
+	}
 	return e.kitEndpoint().BaseURL()
 }
 
 // HTTPClient returns an http.Client configured for this endpoint's transport.
 func (e DaemonEndpoint) HTTPClient(timeout time.Duration) *http.Client {
+	if e.IsRemote() {
+		return e.remoteHTTPClient(timeout)
+	}
 	return auth.HTTPClient(e.BaseURL(), e.transportClient(timeout), func() (string, error) {
 		if e.accessErr != nil {
 			return "", e.accessErr
@@ -89,6 +110,9 @@ func (e DaemonEndpoint) transportClient(timeout time.Duration) *http.Client {
 
 // Listener creates a net.Listener bound to this endpoint.
 func (e DaemonEndpoint) Listener() (net.Listener, error) {
+	if e.IsRemote() {
+		return nil, fmt.Errorf("remote endpoint cannot create a local listener")
+	}
 	return e.kitEndpoint().Listen()
 }
 
