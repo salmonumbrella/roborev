@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"maps"
+	"math"
 	"os"
 	"path"
 	"slices"
@@ -207,6 +208,10 @@ type CIConfig struct {
 	// CommentWhenClean controls new comments when display filters leave no
 	// findings. Unset defaults to true, including a zero-valued CIConfig.
 	CommentWhenClean *bool `toml:"comment_when_clean"`
+
+	// CommentMinConfidence is a display-only floor for synthesized daemon GitHub comments.
+	// Unset disables confidence filtering; zero includes explicit zero confidence.
+	CommentMinConfidence *float64 `toml:"comment_min_confidence"`
 
 	// Panel names a [review.panels.X] panel to run for CI reviews. When set,
 	// the CI poller resolves the panel (members + synthesis) from the config
@@ -597,6 +602,9 @@ type RepoCIConfig struct {
 	// CommentWhenClean overrides whether display-clean synthesis creates comments.
 	CommentWhenClean *bool `toml:"comment_when_clean" comment:"Post synthesized GitHub daemon comments when no findings survive display filters. Default: true."`
 
+	// CommentMinConfidence overrides the global floor; zero resets a positive global floor.
+	CommentMinConfidence *float64 `toml:"comment_min_confidence" comment:"Minimum confidence in synthesized daemon GitHub comments (0 to 1). Unset inherits; 0 disables filtering."`
+
 	// UpsertComments overrides the global ci.upsert_comments setting.
 	// Use a pointer so we can distinguish "not set" from "explicitly false".
 	UpsertComments *bool `toml:"upsert_comments" comment:"Override whether CI updates an existing PR comment instead of creating a new one."`
@@ -918,6 +926,28 @@ func ResolveCICommentWhenClean(repoCfg *RepoConfig, globalCfg *Config) bool {
 func validateCICommentMaxFindings(value int) error {
 	if value < 0 {
 		return fmt.Errorf("ci.comment_max_findings must be non-negative")
+ 	}
+	return nil
+}
+
+// ResolveCICommentMinConfidence resolves the publication-only confidence floor.
+func ResolveCICommentMinConfidence(repoCfg *RepoConfig, globalCfg *Config) (*float64, error) {
+	var floor *float64
+	if globalCfg != nil {
+		floor = globalCfg.CI.CommentMinConfidence
+	}
+	if repoCfg != nil && repoCfg.CI.CommentMinConfidence != nil {
+		floor = repoCfg.CI.CommentMinConfidence
+	}
+	if err := validateCICommentMinConfidence(floor); err != nil {
+		return nil, err
+	}
+	return floor, nil
+}
+
+func validateCICommentMinConfidence(floor *float64) error {
+	if floor != nil && (math.IsNaN(*floor) || math.IsInf(*floor, 0) || *floor < 0 || *floor > 1) {
+		return fmt.Errorf("ci.comment_min_confidence must be finite and between 0 and 1")
 	}
 	return nil
 }

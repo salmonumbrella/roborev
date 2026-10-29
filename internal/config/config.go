@@ -760,6 +760,9 @@ func (c *Config) Validate() (err error) {
 	if err := validateCICommentMaxFindings(c.CI.CommentMaxFindings); err != nil {
 		return err
 	}
+	if err := validateCICommentMinConfidence(c.CI.CommentMinConfidence); err != nil {
+		return err
+	}
 	return ValidateEffectiveReviewConfig(c, nil)
 }
 
@@ -981,6 +984,9 @@ func (c *RepoConfig) Validate() (err error) {
 	if err := validateReasoningValues(reasoning...); err != nil {
 		return err
 	}
+	if err := validateCICommentMinConfidence(c.CI.CommentMinConfidence); err != nil {
+		return err
+	}
 	return validateMinSeverityValues(
 		namedConfigValue{key: "fix_min_severity", value: c.FixMinSeverity},
 		namedConfigValue{key: "refine_min_severity", value: c.RefineMinSeverity},
@@ -1171,6 +1177,7 @@ func applyDaemonSections(c *Config) []error {
 		{"ci", func() error {
 			return errors.Join(
 				validateCICommentMaxFindings(c.CI.CommentMaxFindings),
+				validateCICommentMinConfidence(c.CI.CommentMinConfidence),
 				c.CI.NormalizeInstallations(),
 				validateCIPRFilters(c.CI),
 			)
