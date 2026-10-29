@@ -164,6 +164,7 @@ This mapping is for you, not the user. Use only what the conversation needs.
 | Shorter synthesized GitHub daemon comments | `[ci] comment_max_findings` caps structured findings; `0` (default) is unlimited. Stored reviews stay complete. |
 | Silence on clean synthesized GitHub daemon reviews | `[ci] comment_when_clean = false`; default `true` posts clean comments. Stored reviews stay unchanged. |
 | Only serious findings fail | `review_min_severity`, plus severity guidance in each rubric |
+| Hide low-confidence findings in synthesized GitHub daemon comments | `[ci] comment_min_confidence` (0–1, unset = off); repo 0 resets the global floor; findings without confidence stay visible |
 | Passing reviews close themselves | `auto_close_passing_reviews = true` |
 | Reviewers that see the task a commit is for, from Kata | `[kata_context]` with `mode = "current"`; commits name their issue, such as `Closes: kata#abc4` |
 | Failed reviews and findings filed as Kata issues | A `[[hooks]]` entry with `event = "review.*"` and `type = "kata"` |
