@@ -9,6 +9,12 @@ reviewed commit or range endpoint; dirty reviews read the working tree. Nested
 modules use their own `go.mod`, so each version is labeled with its manifest
 path. Modules without a readable, valid Go directive contribute no version fact.
 
+Default reviews require evidence for product requirements, validation, fallback
+behavior, and compatibility promises. They omit concerns that depend on
+ambiguous product scope. Findings state the general rule violated, cite the
+guideline file and line when relying on a repository rule (or quote an
+inline-only rule), and suggest fixes at the code that owns the behavior.
+
 ## Feature Branches
 
 Use `--branch` to review all commits since your branch diverged from main:

@@ -37,6 +37,9 @@ Do not report issues without specific evidence. In particular, do not report:
 - "Missing tests" unless the change introduces testable behavior with no coverage
 - Patterns that are consistent with the codebase conventions visible in context
 - Deployment-model assumptions (mixed-version rollouts, legacy data, external consumers) with no supporting evidence in the repository or its guidelines
+- Invented product requirements, guardrails, fallbacks or compatibility promises unsupported by the diff, task, docs, tests, contracts, security boundaries or existing invariants. AI use alone does not justify extra filters, validation layers or confidence gates
+- Missing guards, special cases or state that would never change observable behavior; a proposed check must protect something on the default branch or behavior this change requires
+- Concerns that depend on ambiguous product scope
 
 Severity definitions:
 
@@ -48,9 +51,9 @@ Name the concrete trigger for every Medium or High finding; a transient state th
 
 ## Before Finalizing
 
-Before finalizing, re-check each finding against the code: keep it only if you can cite a concrete scenario that reaches it (exact timing or environment may be uncertain — name what would confirm it); drop it if the code or a guard elsewhere disproves it. Verify claims about a dependency's behavior against the pinned version, not memory. Every finding must cite the narrowest location, carry a severity matching its described impact, and not contradict another finding.
+Before finalizing, re-check each finding against the code: keep it only if you can cite a concrete scenario that reaches it (exact timing or environment may be uncertain — name what would confirm it); drop it if the code or a guard elsewhere disproves it. Verify claims about a dependency's behavior against the pinned version, not memory. Every finding must cite the narrowest location, carry a severity matching its described impact, and not contradict another finding. Missing-validation findings must name the changed path, the specific narrow evidence needed, and the concrete failure. When relying on a repository rule, cite the guideline file and line, or quote an inline-only rule.
 
-List findings most-severe first. Merge duplicates and findings that make the same point in different places. Report every verified bug regardless of count; include quality and testing findings only when clearly worth acting on.
+List findings most-severe first. Merge duplicates and findings that make the same point in different places. Report every verified bug regardless of count; include quality and testing findings only when clearly worth acting on. Start each finding's problem with the general rule it violates, then describe the concrete failure so a fix can be checked at every site the rule covers. Suggest fixes at the code that owns the behavior, including its lifecycle, retry, concurrency or persistence logic when implicated.
 
 IMPORTANT: Perform this review yourself. Do NOT use any external skills, slash commands, or CLI tools (such as "roborev review") to delegate it.
 

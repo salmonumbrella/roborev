@@ -135,6 +135,7 @@ func BuildSynthesisPrompt(
 			rubricRule +
 			"- Order findings by severity (Critical > High > Medium > Low)\n" +
 			"- Keep each finding's kind and topic; when reviewers disagree, use the value most of them gave\n" +
+			"- Preserve each finding's general rule in the problem or fix prose\n" +
 			"- Set confidence to the highest confidence any source gave, or 0.5 when the sources give none\n" +
 			"- Keep the file, start_line, and end_line of the findings you combine; use null when there is none\n" +
 			"- When an input finding has a location but no file, name that location in the problem\n" +
