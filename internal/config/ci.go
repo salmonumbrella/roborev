@@ -926,7 +926,7 @@ func ResolveCICommentWhenClean(repoCfg *RepoConfig, globalCfg *Config) bool {
 func validateCICommentMaxFindings(value int) error {
 	if value < 0 {
 		return fmt.Errorf("ci.comment_max_findings must be non-negative")
- 	}
+	}
 	return nil
 }
 
