@@ -113,7 +113,14 @@ func TestCommentPublicationRanking(t *testing.T) {
 	assert.Equal(t, before, doc.Markdown(""))
 	assert.Equal(t, []int{1, 2}, doc.Findings[1].Sources)
 	ordinary := PrepareComment(CommentConfig{}, ReviewResult{Structured: &doc})
-	assert.Equal(t, "one source", ordinary.findings[0].problem, "shared defaults retain original order")
+	var ordinaryGot []string
+	for _, finding := range ordinary.findings {
+		ordinaryGot = append(ordinaryGot, finding.problem)
+	}
+	assert.Equal(t, []string{
+		"critical severity", "one source", "tie first", "tie second", "more confident",
+		"independent", "independent", "low severity",
+	}, ordinaryGot, "default severity sort stays stable without source/confidence ranking")
 	assert.Len(t, doc.Findings, 8)
 }
 
