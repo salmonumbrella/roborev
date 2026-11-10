@@ -7,5 +7,5 @@ import (
 
 func TestMain(m *testing.M) {
 	InstallForgeAPIGuard()
-	os.Exit(m.Run())
+	os.Exit(RunIsolatedMain(m))
 }

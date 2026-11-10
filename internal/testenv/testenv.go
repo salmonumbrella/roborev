@@ -113,6 +113,11 @@ func unsetAgentConfigDirEnv() func() {
 }
 
 func configureGitForTests(tmpDir string) {
+	// Git runners that strip GIT_* variables still read HOME/.gitconfig.
+	// Isolate the home as well as explicit config overrides so they cannot
+	// read persistent user settings after another test restores its HOME.
+	_ = os.Setenv("HOME", tmpDir)
+	_ = os.Setenv("USERPROFILE", tmpDir)
 	// Prevent global/system git config from leaking into tests.
 	// Without this, commit.gpgsign=true in global config triggers
 	// gpg-agent/pinentry during test commits.
@@ -124,7 +129,7 @@ func configureGitForTests(tmpDir string) {
 	// git invocation in the suite on Windows (notably Windows-on-ARM). An empty
 	// file is a valid, no-op global config on every platform. On Unix
 	// /dev/null happens to work, but the empty file is correct everywhere.
-	emptyGlobalConfig := filepath.Join(tmpDir, "gitconfig-global")
+	emptyGlobalConfig := filepath.Join(tmpDir, ".gitconfig")
 	if f, err := os.OpenFile(emptyGlobalConfig, os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
 		_ = f.Close()
 	}
