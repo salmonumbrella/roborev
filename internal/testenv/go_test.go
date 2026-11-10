@@ -12,8 +12,43 @@ import (
 )
 
 func TestConfigureGitForTestsPreservesGoEnvironment(t *testing.T) {
-	for _, name := range []string{"defaults", "persisted settings and environment override", "GOENV off"} {
-		t.Run(name, func(t *testing.T) {
+	tests := []struct {
+		name       string
+		setup      func(t *testing.T, root string, readGoEnv func() map[string]string)
+		wantBefore func(root string) map[string]string
+		wantGOENV  string
+	}{
+		{name: "defaults"},
+		{
+			name: "persisted settings and environment override",
+			setup: func(t *testing.T, root string, readGoEnv func() map[string]string) {
+				configPath := readGoEnv()["GOENV"]
+				rel, err := filepath.Rel(root, configPath)
+				require.NoError(t, err)
+				require.True(t, filepath.IsLocal(rel), "Go settings must stay inside the fixture")
+				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o755))
+				settings := "GOMODCACHE=" + filepath.Join(root, "persisted-modules") + "\nGOFLAGS=-mod=readonly\nGOCACHE=" + filepath.Join(root, "persisted-cache") + "\n"
+				require.NoError(t, os.WriteFile(configPath, []byte(settings), 0o600))
+				t.Setenv("GOCACHE", filepath.Join(root, "explicit-cache"))
+			},
+			wantBefore: func(root string) map[string]string {
+				return map[string]string{
+					"GOFLAGS":    "-mod=readonly",
+					"GOMODCACHE": filepath.Join(root, "persisted-modules"),
+					"GOCACHE":    filepath.Join(root, "explicit-cache"),
+				}
+			},
+		},
+		{
+			name: "GOENV off",
+			setup: func(t *testing.T, _ string, _ func() map[string]string) {
+				t.Setenv("GOENV", "off")
+			},
+			wantGOENV: "off",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			root := t.TempDir()
 			t.Chdir(root)
 			for _, key := range []string{"HOME", "USERPROFILE", "XDG_CONFIG_HOME", "APPDATA", "LOCALAPPDATA"} {
@@ -38,29 +73,19 @@ func TestConfigureGitForTestsPreservesGoEnvironment(t *testing.T) {
 				require.NoError(t, json.Unmarshal(out, &values))
 				return values
 			}
-			switch name {
-			case "persisted settings and environment override":
-				configPath := readGoEnv()["GOENV"]
-				rel, err := filepath.Rel(root, configPath)
-				require.NoError(t, err)
-				require.True(t, filepath.IsLocal(rel), "Go settings must stay inside the fixture")
-				require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o755))
-				settings := "GOMODCACHE=" + filepath.Join(root, "persisted-modules") + "\nGOFLAGS=-mod=readonly\nGOCACHE=" + filepath.Join(root, "persisted-cache") + "\n"
-				require.NoError(t, os.WriteFile(configPath, []byte(settings), 0o600))
-				t.Setenv("GOCACHE", filepath.Join(root, "explicit-cache"))
-			case "GOENV off":
-				t.Setenv("GOENV", "off")
+			if tt.setup != nil {
+				tt.setup(t, root, readGoEnv)
 			}
 			before := readGoEnv()
-			if name == "persisted settings and environment override" {
-				require.Equal(t, "-mod=readonly", before["GOFLAGS"])
-				require.Equal(t, filepath.Join(root, "persisted-modules"), before["GOMODCACHE"])
-				require.Equal(t, filepath.Join(root, "explicit-cache"), before["GOCACHE"])
+			if tt.wantBefore != nil {
+				for key, value := range tt.wantBefore(root) {
+					require.Equal(t, value, before[key])
+				}
 			}
 			require.NoError(t, configureGitForTests(t.Context(), t.TempDir()))
 			assert.Equal(t, before, readGoEnv())
-			if name == "GOENV off" {
-				assert.Equal(t, "off", os.Getenv("GOENV"))
+			if tt.wantGOENV != "" {
+				assert.Equal(t, tt.wantGOENV, os.Getenv("GOENV"))
 			}
 		})
 	}

@@ -161,8 +161,7 @@ func configureGitForTests(ctx context.Context, tmpDir string) error {
 	// git invocation in the suite on Windows (notably Windows-on-ARM). An empty
 	// file is a valid, no-op global config on every platform. On Unix
 	// /dev/null happens to work, but the empty file is correct everywhere.
-	// Stripped and unstripped Git commands must read the same empty config.
-	emptyGlobalConfig := filepath.Join(tmpDir, ".gitconfig")
+	emptyGlobalConfig := filepath.Join(tmpDir, "gitconfig-global")
 	if f, err := os.OpenFile(emptyGlobalConfig, os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
 		_ = f.Close()
 	}
