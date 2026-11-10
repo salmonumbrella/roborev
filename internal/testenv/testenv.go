@@ -4,15 +4,19 @@
 package testenv
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
 // RunIsolatedMain provides a standardized TestMain execution wrapper that
 // isolates tests from the production ~/.roborev directory. It safely manages
-// environment variables and preserves the original test exit code.
+// environment variables and preserves the original test exit code. Git/Go
+// configuration overrides last for the test process lifetime.
 func RunIsolatedMain(m *testing.M) int {
 	// Snapshot prod log state BEFORE overriding ROBOREV_DATA_DIR.
 	// Best-effort: if the home directory can't be resolved (e.g. CI
@@ -29,7 +33,11 @@ func RunIsolatedMain(m *testing.M) int {
 	}
 	defer cleanupTempDir()
 
-	configureGitForTests(tmpDir)
+	// TestMain has no caller context before m.Run, so setup owns this root.
+	if err := configureGitForTests(context.Background(), tmpDir); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to configure test environment: %v\n", err)
+		return 1
+	}
 
 	restoreDataDir := setDataDirEnv(tmpDir)
 	defer restoreDataDir()
@@ -112,7 +120,31 @@ func unsetAgentConfigDirEnv() func() {
 	}
 }
 
-func configureGitForTests(tmpDir string) {
+func preserveGoEnvironment(ctx context.Context) error {
+	out, err := exec.CommandContext(ctx, "go", "env", "-json", "GOENV", "GOPATH", "GOMODCACHE", "GOCACHE").Output()
+	if err != nil {
+		return fmt.Errorf("resolve Go environment: %w", err)
+	}
+	var values map[string]string
+	if err := json.Unmarshal(out, &values); err != nil {
+		return fmt.Errorf("decode Go environment: %w", err)
+	}
+	for key, value := range values {
+		// GOENV=off resolves to empty; retain the inherited off setting.
+		if value != "" {
+			if err := os.Setenv(key, value); err != nil {
+				return fmt.Errorf("preserve %s: %w", key, err)
+			}
+		}
+	}
+	return nil
+}
+
+func configureGitForTests(ctx context.Context, tmpDir string) error {
+	// Preserve resolved Go settings and cache paths before moving HOME/XDG.
+	if err := preserveGoEnvironment(ctx); err != nil {
+		return err
+	}
 	// Git runners that strip GIT_* variables still read HOME/.gitconfig.
 	// Isolate the home as well as explicit config overrides so they cannot
 	// read persistent user settings after another test restores its HOME.
@@ -129,6 +161,7 @@ func configureGitForTests(tmpDir string) {
 	// git invocation in the suite on Windows (notably Windows-on-ARM). An empty
 	// file is a valid, no-op global config on every platform. On Unix
 	// /dev/null happens to work, but the empty file is correct everywhere.
+	// Stripped and unstripped Git commands must read the same empty config.
 	emptyGlobalConfig := filepath.Join(tmpDir, ".gitconfig")
 	if f, err := os.OpenFile(emptyGlobalConfig, os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
 		_ = f.Close()
@@ -144,4 +177,5 @@ func configureGitForTests(tmpDir string) {
 	// Never allow git to prompt for input (passwords, passphrases, etc).
 	// If something unexpected tries to prompt, fail fast instead of blocking.
 	_ = os.Setenv("GIT_TERMINAL_PROMPT", "0")
+	return nil
 }
